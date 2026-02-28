@@ -37,6 +37,8 @@ public function deliveryConfirmation()
     return $this->hasOne(DeliveryConfirmation::class);
 }
 
+public function receipt()   { return $this->hasOne(DonationReceipt::class); }
+
 
 
 

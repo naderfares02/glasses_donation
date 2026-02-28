@@ -99,13 +99,17 @@
                                         <div class="flex items-center gap-3">
                                             <div class="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 border shrink-0">
                                                 @if($r->glasses?->primaryImage)
-                                                    <img src="{{ asset('storage/' . $r->glasses->primaryImage->path) }}"
-                                                        class="w-full h-full object-cover" alt="img">
+                                                    <a href="{{ route('admin.glasses.show', $r->glasses->id) }}">
+                                                        <img src="{{ asset('storage/' . $r->glasses->primaryImage->path) }}"
+                                                            class="w-full h-full object-cover" alt="img">
+                                                    </a>
                                                 @endif
                                             </div>
                                             <div class="min-w-0">
                                                 <p class="font-semibold text-gray-800 truncate">
-                                                    {{ $r->glasses->title ?? 'Glasses' }}
+                                                    <a href="{{ route('admin.glasses.show', $r->glasses->id) }}">
+                                                        {{ $r->glasses->title ?? 'Glasses' }}
+                                                    </a>
                                                 </p>
                                                 <p class="text-xs text-gray-500 truncate">
                                                     #{{ $r->id }} • Conversation: {{ $r->conversation_id ?? '—' }}
@@ -115,12 +119,16 @@
                                     </td>
 
                                     <td class="p-4">
-                                        <p class="font-semibold text-gray-800">{{ $r->donor->name ?? '—' }}</p>
+                                        <p class="font-semibold text-gray-800"> <a
+                                                href="{{ route('admin.users.show', $r->donor->id) }}">
+                                                {{ $r->donor->name ?? '—' }}</a></p>
                                         <p class="text-xs text-gray-500">{{ $r->donor->email ?? '' }}</p>
                                     </td>
 
                                     <td class="p-4">
-                                        <p class="font-semibold text-gray-800">{{ $r->recipient->name ?? '—' }}</p>
+                                        <p class="font-semibold text-gray-800"><a
+                                                href="{{ route('admin.users.show', $r->recipient->id) }}">{{ $r->recipient->name ?? '—' }}</a>
+                                        </p>
                                         <p class="text-xs text-gray-500">{{ $r->recipient->email ?? '' }}</p>
                                     </td>
 

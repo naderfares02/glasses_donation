@@ -28,33 +28,39 @@ class RegisteredUserController extends Controller
      * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:donor,recipient',
+{
+    $request->validate([
+        'role' => ['required', 'in:donor,recipient'],
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+        'phone' => [
+            'required',
+            'regex:/^\+49[0-9]{9,12}$/',
+            'unique:users,phone',
+        ],
+        'phone.regex' => 'Phone must start with +49 and contain only numbers after it.',
+        'city' => ['required', 'string', 'max:255'],
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        'terms' => ['accepted'],
+    ]);
 
-        ]);
+    $user = User::create([
+        'role' => $request->role,
+        'name' => $request->name,
+        'email' => $request->email,
+        'phone' => $request->phone,
+        'city'  => $request->city,
+        'password' => Hash::make($request->password),
+    ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
+    event(new Registered($user));
 
-        event(new Registered($user));
+    Auth::login($user);
 
-        Auth::login($user);
-
-        $user = Auth::user();
-
-        return match ($user->role) {
+            return match ($user->role) {
             'donor' => redirect()->route('donor.main_page'),
             'recipient' => redirect()->route('recipient.main_page'),
             default => redirect('/'),
         };
-
-    }
+}
 }

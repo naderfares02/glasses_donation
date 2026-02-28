@@ -20,6 +20,8 @@ class SuperAdminSeeder extends Seeder
             'name' => 'nader',
             'password' => Hash::make('123123123'),
             'role' => 'super_admin',
+            'phone' => '+4915123956786',
+            'city' => 'Leipzig',
             'email_verified_at' => now(),
         ]
     );

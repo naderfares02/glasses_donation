@@ -1,272 +1,392 @@
+{{-- resources/views/profile/edit.blade.php --}}
 <x-app-layout>
+    @push('styles')
+        {{-- Cropper CSS --}}
+        <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
+        <style>
+            /* تحسينات بسيطة للمودال */
+            .cropper-view-box,
+            .cropper-face {
+                border-radius: 9999px;
+            }
+        </style>
+    @endpush
+
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Profile</h2>
+                <p class="text-sm text-gray-500 mt-1">Update your photo, personal info and password.</p>
+            </div>
+            <a href="{{ url()->previous() }}" class="text-sm font-semibold text-blue-700 hover:text-blue-800">
+                ← Back
+            </a>
+        </div>
     </x-slot>
 
-    <div class="py-12">
-        {{-- ✅ Avatar Upload + Crop --}}
-        <div class="flex flex-col items-center mb-10" x-data="{ openCrop:false }">
+    <div class="py-10">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            {{-- ✅ Form: Update avatar --}}
-            <form id="avatarForm" action="{{ route('profile.avatar.update') }}" method="POST"
-                enctype="multipart/form-data" class="flex flex-col items-center">
-                @csrf
-                @method('PATCH')
+            {{-- Flash --}}
+            @if(session('success'))
+                <div class="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl">
+                    {{ session('success') }}
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl">
+                    {{ session('error') }}
+                </div>
+            @endif
 
-                <label class="relative cursor-pointer group">
-                    {{-- صورة المستخدم --}}
-                    @if(Auth::user()->avatar)
-                        <img id="avatarPreview" src="{{ asset('storage/' . Auth::user()->avatar) }}"
-                            class="w-32 h-32 rounded-full object-cover border-4 border-gray-300 shadow-sm transition group-hover:opacity-80"
-                            alt="avatar">
+            {{-- Top: Avatar + Summary --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {{-- Avatar card --}}
+                <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+{{-- Avatar card --}}
+<div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+    <div class="p-5 border-b bg-gray-50">
+        <p class="text-sm font-semibold text-gray-800">Profile Photo</p>
+        <p class="text-xs text-gray-500 mt-1">Upload, crop, and save your avatar.</p>
+    </div>
+
+    <div class="p-6 space-y-4">
+        {{-- ✅ Update avatar form --}}
+        <form id="avatarForm" action="{{ route('profile.avatar.update') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            @method('PATCH')
+
+            <div class="flex flex-col items-center text-center">
+                <label class="relative group cursor-pointer">
+                    @if(auth()->user()->avatar)
+                        <img id="avatarPreview" src="{{ asset('storage/' . auth()->user()->avatar) }}"
+                             class="w-28 h-28 rounded-full object-cover border shadow-sm"
+                             alt="avatar">
                     @else
-                        {{-- Default letter avatar (نفس الحجم) --}}
                         <div id="avatarPreview"
-                            class="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center
-                                                                                                                                   text-4xl font-bold text-gray-700 border-4 border-gray-300 shadow-sm
-                                                                                                                                   transition group-hover:opacity-80">
-                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                             class="w-28 h-28 rounded-full bg-gray-100 border shadow-sm flex items-center justify-center text-3xl font-extrabold text-gray-700">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                         </div>
                     @endif
 
-                    {{-- input مخفي فوق الصورة --}}
-                    <input id="avatarInput" type="file" name="avatar"
-                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*">
-
-                    {{-- طبقة hover --}}
-                    <div
-                        class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition pointer-events-none">
-                        <span class="text-white text-sm font-semibold">
-                            Change photo
-                        </span>
+                    {{-- Hover overlay --}}
+                    <div class="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover:opacity-100 transition
+                                flex items-center justify-center pointer-events-none">
+                        <span class="text-white text-xs font-semibold">Change</span>
                     </div>
+
+                    {{-- ✅ نفس منطق القديم: input hidden --}}
+                    <input id="avatarInput" type="file" name="avatar" accept="image/*" class="hidden">
                 </label>
 
-                {{-- ✅ Hidden base64 for cropped image (سيتم تعبئته من JS) --}}
-                <input type="hidden" name="cropped_avatar" id="croppedAvatar">
+                <p class="my-3 text-xs text-gray-500">
+                    Recommended: square image. We will crop it to a circle.
+                </p>
+            </div>
 
-                {{-- زر التحديث --}}
-                {{-- <button type="submit"
-                    class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    Update photo
-                </button> --}}
-            </form>
+            {{-- hidden base64 --}}
+            <input type="hidden" name="cropped_avatar" id="croppedAvatar">
 
-            {{-- ✅ Form: Remove avatar (خارج الفورم الأول) --}}
-            @if(auth()->user()->avatar)
-                <form action="{{ route('profile.avatar.destroy') }}" method="POST" class="mt-2"
-                    onsubmit="return confirm('Remove profile photo?');">
-                    @csrf
-                    @method('DELETE')
+            <div class="flex items-center gap-1">
+                <button type="button" id="openFileBtn"
+                        class="flex-1 px-4 py-2.5 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold text-gray-800">
+                    Upload photo
+                </button>
+            </div>
 
-                    <button type="submit"
-                        class="px-4 py-2 bg-red-100 text-red-800 rounded-lg border hover:bg-red-200 transition">
-                        Remove photo
-                    </button>
-                </form>
-            @endif
-
-            {{-- الأخطاء --}}
             @error('avatar')
-                <span class="text-red-500 text-sm mt-3">{{ $message }}</span>
+                <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
             @enderror
             @error('cropped_avatar')
-                <span class="text-red-500 text-sm mt-3">{{ $message }}</span>
+                <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
             @enderror
+        </form>
 
-            {{-- رسالة النجاح --}}
-            @if(session('success'))
-                <span class="text-green-600 text-sm mt-3">{{ session('success') }}</span>
-            @endif
+        {{-- ✅ Remove avatar form (خارج الفورم الأول) --}}
+        @if(auth()->user()->avatar)
+            <form action="{{ route('profile.avatar.destroy') }}" method="POST"
+                  onsubmit="return confirm('Remove profile photo?');">
+                @csrf
+                @method('DELETE')
 
-            {{-- ✅ Crop Modal (مضمون) --}}
-            <div id="cropModal" class="fixed inset-0 hidden flex items-center justify-center z-[99999]">
-                {{-- Overlay --}}
-                <div id="cropOverlay" class="absolute inset-0 bg-black/50"></div>
+                <button type="submit"
+                        class="w-full px-4 py-2.5 rounded-xl border bg-red-50 hover:bg-red-100 text-sm font-semibold text-red-700" style="margin-top: -5px">
+                    Remove photo
+                </button>
+            </form>
+        @endif
+    </div>
+</div>
+                </div>
 
-                {{-- Card --}}
-                <div class="relative z-10 bg-white w-full max-w-xl rounded-2xl shadow-xl p-6 mx-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-lg font-bold text-gray-800">Crop your photo</p>
-                            <p class="text-sm text-gray-600 mt-1">Drag to adjust, then click Save.</p>
-                        </div>
-                        <button type="button" id="closeCrop" class="p-2 rounded-lg hover:bg-gray-100">✕</button>
+                {{-- Summary card --}}
+                <div class="bg-white border rounded-2xl shadow-sm overflow-hidden lg:col-span-2">
+                    <div class="p-5 border-b bg-gray-50">
+                        <p class="text-sm font-semibold text-gray-800">Account Summary</p>
+                        <p class="text-xs text-gray-500 mt-1">Your basic details.</p>
                     </div>
 
-                    <div class="mt-5">
-                        <div class="w-full h-[420px] bg-gray-50 border rounded-xl overflow-hidden relative">
-                            <img id="cropImage" style="display:block; max-width:100%;" alt="Crop image">
+                    <div class="p-6">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full border
+                                {{ auth()->user()->role === 'donor' ? 'bg-blue-50 text-blue-700 border-blue-200' : '' }}
+                                {{ auth()->user()->role === 'recipient' ? 'bg-purple-50 text-purple-700 border-purple-200' : '' }}
+                                {{ in_array(auth()->user()->role, ['admin', 'super_admin']) ? 'bg-gray-100 text-gray-800 border-gray-200' : '' }}
+                            ">
+                                {{ strtoupper(auth()->user()->role) }}
+                            </span>
+
+                            @if(auth()->user()->phone_verified_at)
+                                <span
+                                    class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full border bg-green-50 text-green-700 border-green-200">
+                                    ✅ Phone verified
+                                </span>
+                            @else
+                                <span
+                                    class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+                                    ⚠️ Phone not verified
+                                </span>
+                            @endif
+
+                            @if(auth()->user()->email_verified_at)
+                                <span
+                                    class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full border bg-green-50 text-green-700 border-green-200">
+                                    ✅ email verified
+                                </span>
+                            @else
+                                <span
+                                    class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+                                    ⚠️ email not verified
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="border rounded-2xl p-4 bg-white">
+                                <p class="text-xs text-gray-500">Name</p>
+                                <p class="font-semibold text-gray-800 mt-1 truncate">{{ auth()->user()->name }}</p>
+                            </div>
+
+                            <div class="border rounded-2xl p-4 bg-white">
+                                <p class="text-xs text-gray-500">Email</p>
+                                <p class="font-semibold text-gray-800 mt-1 truncate">{{ auth()->user()->email }}</p>
+                            </div>
+
+                            <div class="border rounded-2xl p-4 bg-white">
+                                <p class="text-xs text-gray-500">Phone</p>
+                                <p class="font-semibold text-gray-800 mt-1 truncate">{{ auth()->user()->phone ?: '—' }}
+                                </p>
+                            </div>
+
+                            <div class="border rounded-2xl p-4 bg-white">
+                                <p class="text-xs text-gray-500">City</p>
+                                <p class="font-semibold text-gray-800 mt-1 truncate">{{ auth()->user()->city ?: '—' }}
+                                </p>
+                            </div>
+
+                            <div class="border rounded-2xl p-4 bg-white">
+                                <p class="text-xs text-gray-500">Joined</p>
+                                <p class="font-semibold text-gray-800 mt-1">
+                                    {{ auth()->user()->created_at?->format('Y-m-d') ?? '—' }}
+                                </p>
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="mt-6 flex items-center justify-end gap-3">
+            {{-- Forms grid --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50">
+                        <p class="text-sm font-semibold text-gray-800">Personal Information</p>
+                        <p class="text-xs text-gray-500 mt-1">Update your name, phone and city.</p>
+                    </div>
+                    <div class="p-6">
+                        @include('profile.partials.update-profile-information-form')
+                    </div>
+                </div>
+
+                <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-5 border-b bg-gray-50">
+                        <p class="text-sm font-semibold text-gray-800">Security</p>
+                        <p class="text-xs text-gray-500 mt-1">Change your password.</p>
+                    </div>
+                    <div class="p-6">
+                        @include('profile.partials.update-password-form')
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-5 border-b bg-gray-50">
+                    <p class="text-sm font-semibold text-gray-800">Danger Zone</p>
+                    <p class="text-xs text-gray-500 mt-1">Delete your account permanently.</p>
+                </div>
+                <div class="p-6">
+                    @include('profile.partials.delete-user-form')
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {{-- Crop Modal --}}
+    <div id="cropModal" class="fixed inset-0 z-[99999] hidden items-center justify-center p-4">
+        <div id="cropOverlay" class="absolute inset-0 bg-black/50"></div>
+
+        <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="p-5 border-b bg-gray-50 flex items-start justify-between">
+                <div>
+                    <p class="text-lg font-bold text-gray-800">Crop your photo</p>
+                    <p class="text-sm text-gray-600 mt-1">Adjust then click Save.</p>
+                </div>
+                <button type="button" id="closeCrop" class="px-3 py-2 rounded-xl hover:bg-gray-100 text-gray-700">
+                    ✕
+                </button>
+            </div>
+
+            <div class="p-5">
+                <div
+                    class="w-full h-[420px] bg-gray-50 border rounded-xl overflow-hidden flex items-center justify-center">
+                    <img id="cropImage" alt="Crop image" class="max-w-full block">
+                </div>
+
+                <div class="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                    <div class="flex gap-2">
+                        <button type="button" id="zoomOut"
+                            class="px-4 py-2 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold">
+                            −
+                        </button>
+                        <button type="button" id="zoomIn"
+                            class="px-4 py-2 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold">
+                            +
+                        </button>
+                        <button type="button" id="resetCrop"
+                            class="px-4 py-2 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold">
+                            Reset
+                        </button>
+                    </div>
+
+                    <div class="flex gap-2">
                         <button type="button" id="cancelCrop"
-                            class="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200">
+                            class="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-semibold">
                             Cancel
                         </button>
-
                         <button type="button" id="saveCrop"
-                            class="px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white">
+                            class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
                             Save
                         </button>
                     </div>
-                </div>
-            </div>
-
-
-
-
-        </div>
-
-
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-profile-information-form')
-                </div>
-            </div>
-
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
-                </div>
-            </div>
-
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
                 </div>
             </div>
         </div>
     </div>
 
     @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                console.log("✅ Crop script loaded");
+        {{-- Cropper JS --}}
+        <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 
-                // ✅ تأكيد أن Cropper محمّل
-                if (typeof Cropper === 'undefined') {
-                    console.error("❌ Cropper is NOT loaded. Add cropper.min.js in the layout before scripts stack.");
-                    return;
-                }
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof Cropper === 'undefined') {
+        console.error("Cropper is not loaded");
+        return;
+    }
 
-                let cropper = null;
+    const form = document.getElementById('avatarForm');
+    const input = document.getElementById('avatarInput');
+    const openBtn = document.getElementById('openFileBtn');
+    const hidden = document.getElementById('croppedAvatar');
 
-                const input = document.getElementById('avatarInput');
-                const form = document.getElementById('avatarForm');
+    const modal = document.getElementById('cropModal');
+    const overlay = document.getElementById('cropOverlay');
+    const cropImage = document.getElementById('cropImage');
+    const closeBtn = document.getElementById('closeCrop');
+    const cancelBtn = document.getElementById('cancelCrop');
+    const saveBtn = document.getElementById('saveCrop');
 
-                const modal = document.getElementById('cropModal');
-                const overlay = document.getElementById('cropOverlay');
-                const cropImage = document.getElementById('cropImage');
+    let cropper = null;
 
-                const closeBtn = document.getElementById('closeCrop');
-                const cancelBtn = document.getElementById('cancelCrop');
-                const saveBtn = document.getElementById('saveCrop');
+    const openModal = () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    };
 
-                const hidden = document.getElementById('croppedAvatar');
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (cropper) { cropper.destroy(); cropper = null; }
+        cropImage.src = '';
+    };
 
-                if (!input || !form || !modal || !overlay || !cropImage || !saveBtn || !hidden) {
-                    console.error("❌ Missing elements. Check IDs in HTML.");
-                    return;
-                }
+    openBtn?.addEventListener('click', () => input.click());
+    overlay?.addEventListener('click', closeModal);
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
 
+    input.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-                function openModal() {
-                    modal.classList.remove('hidden');
-                    modal.classList.add('flex');
-                    console.log("✅ Modal opened");
-                }
+        // ✅ كل مرة نختار ملف جديد، نفرّغ الـ hidden
+        hidden.value = '';
 
-                function closeModal() {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
+        openModal();
+        cropImage.src = URL.createObjectURL(file);
 
-                    if (cropper) { cropper.destroy(); cropper = null; }
-                    cropImage.src = '';
-                    console.log("✅ Modal closed");
-                }
-
-
-                overlay.addEventListener('click', closeModal);
-                closeBtn.addEventListener('click', closeModal);
-                cancelBtn.addEventListener('click', closeModal);
-
-                input.addEventListener('change', function (e) {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    console.log("✅ File selected:", file.name);
-
-                    // ✅ افتح المودال قبل init
-                    openModal();
-
-                    cropImage.src = URL.createObjectURL(file);
-
-                    cropImage.onload = function () {
-                        setTimeout(() => {
-                            if (cropper) cropper.destroy();
-
-                            cropper = new Cropper(cropImage, {
-                                aspectRatio: 1,
-                                viewMode: 1,
-                                autoCropArea: 1,
-                                dragMode: 'move',
-                                background: false,
-                                responsive: true,
-                                movable: true,
-                                zoomable: true,
-                                scalable: false,
-                                rotatable: false,
-                            });
-
-                            console.log("✅ Cropper initialized");
-                        }, 150);
-                    };
-
-                    // ✅ مهم: امنع الفورم من الإرسال إذا ما تم القص بعد اختيار صورة
-                    form.addEventListener('submit', function (e) {
-                        // إذا المستخدم اختار ملف ولسه ما عمل save crop
-                        if (input.files?.length && !hidden.value) {
-                            e.preventDefault();
-                            openModal();
-                        }
-                    });
-
-                    saveBtn.addEventListener('click', function () {
-                        console.log("✅ Save clicked");
-
-                        if (!cropper) {
-                            console.warn("⚠️ Cropper not initialized");
-                            return;
-                        }
-
-                        const canvas = cropper.getCroppedCanvas({ width: 400, height: 400 });
-
-                        hidden.value = canvas.toDataURL('image/jpeg', 0.9);
-
-                        console.log("✅ Cropped data set. Submitting form...");
-                        closeModal();
-                        form.submit();
-                    });
-
-                    const zoomInBtn = document.getElementById('zoomIn');
-                    const zoomOutBtn = document.getElementById('zoomOut');
-                    const resetBtn = document.getElementById('resetCrop');
-
-                    zoomInBtn?.addEventListener('click', () => cropper?.zoom(0.1));
-                    zoomOutBtn?.addEventListener('click', () => cropper?.zoom(-0.1));
-                    resetBtn?.addEventListener('click', () => cropper?.reset());
-
-                });
+        cropImage.onload = () => {
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(cropImage, {
+                aspectRatio: 1,
+                viewMode: 1,
+                autoCropArea: 1,
+                dragMode: 'move',
+                background: false,
+                responsive: true,
             });
+        };
+    });
 
-        </script>
+    saveBtn.addEventListener('click', () => {
+        if (!cropper) return;
+
+        const canvas = cropper.getCroppedCanvas({ width: 500, height: 500 });
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+        hidden.value = dataUrl;
+
+        // ✅ تحديث preview فوراً حتى ما تشوف default
+        const preview = document.getElementById('avatarPreview');
+        if (preview?.tagName === 'IMG') {
+            preview.src = dataUrl;
+        } else if (preview) {
+            // لو كان div (حرف افتراضي) استبدله بصورة
+            const img = document.createElement('img');
+            img.id = 'avatarPreview';
+            img.src = dataUrl;
+            img.className = "w-28 h-28 rounded-full object-cover border shadow-sm";
+            img.alt = "avatar";
+            preview.replaceWith(img);
+        }
+
+        closeModal();
+
+        // ✅ نفس اللي طلبته: submit مباشر بعد القص
+        form.submit();
+    });
+
+    // ✅ منع إرسال فورم بدون قص إذا اختار ملف
+    form.addEventListener('submit', (e) => {
+        if (input.files?.length && !hidden.value) {
+            e.preventDefault();
+            openModal();
+        }
+    });
+});
+</script>
     @endpush
-
-
-
 </x-app-layout>

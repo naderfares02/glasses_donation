@@ -58,7 +58,7 @@
 
                         <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
                             <div class="max-w-[75%] rounded-2xl px-4 py-3
-                                    {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
+                                                {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
                                 <p class="text-sm whitespace-pre-line">{{ $m->body }}</p>
                                 <p class="text-[11px] mt-2 opacity-75">
                                     {{ $m->created_at->format('Y-m-d H:i') }}
@@ -75,26 +75,22 @@
                 {{-- Send message --}}
                 <div class="p-5 border-t bg-gray-50">
                     @if($conversation->status === 'open')
-                                    <form method="POST" action="{{ auth()->user()->role === 'donor'
-                        ? route('donor.conversations.messages.store', $conversation->id)
-                        : route('recipient.conversations.messages.store', $conversation->id) }}">
-                                        @csrf
+                        <form wire:submit.prevent="send">
+                            <div class="flex gap-3">
+                                <textarea wire:model.live="body" rows="2"
+                                    class="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-200"
+                                    placeholder="Write a message..."></textarea>
 
-                                        <div class="flex gap-3">
-                                            <textarea name="body" rows="2"
-                                                class="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-200"
-                                                placeholder="Write a message..."></textarea>
+                                <button type="submit"
+                                    class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
+                                    Send
+                                </button>
+                            </div>
 
-                                            <button type="submit"
-                                                class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
-                                                Send
-                                            </button>
-                                        </div>
-
-                                        @error('body')
-                                            <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
-                                        @enderror
-                                    </form>
+                            @error('body')
+                                <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                            @enderror
+                        </form>
                     @else
                         <p class="text-sm text-gray-600">This conversation is closed.</p>
                     @endif

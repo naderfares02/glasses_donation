@@ -16,10 +16,26 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // المتبرع
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('lens_type')->nullable();
-            $table->string('prescription')->nullable();
             $table->enum('condition', ['new','used']);
             $table->enum('status', ['available','in_contact','donated'])->default('available');
+
+             $table->string('brand')->nullable();
+            $table->string('lens_type')->nullable(); // single_vision, bifocal...
+            $table->string('vision_type')->nullable();
+
+            $table->string('sph')->nullable();
+            $table->string('cyl')->nullable();
+            $table->string('axis')->nullable();
+            $table->string('pd')->nullable();
+            $table->string('prescription_note')->nullable();
+
+            $table->string('frame_size')->nullable();  // small/medium/large/unknown
+            $table->string('frame_color')->nullable();
+            $table->string('age_group')->nullable();   // adult/kids...
+            $table->string('gender')->nullable();      // male/female/unisex...
+
+            $table->string('pickup_city')->nullable();
+            $table->string('contact_method')->nullable(); // chat_only/phone/both
 
             $table->unsignedBigInteger('active_contact_request_id')->nullable();
 

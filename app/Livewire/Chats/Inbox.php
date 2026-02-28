@@ -5,10 +5,11 @@ namespace App\Livewire\Chats;
 use Livewire\Component;
 use App\Models\Conversation;
 use App\Models\Message;
-
+use Illuminate\Support\Facades\DB;
 class Inbox extends Component
 {
     public ?int $activeConversationId = null;
+    
     public string $body = '';
 
     protected $queryString = [
@@ -60,43 +61,73 @@ class Inbox extends Component
             ->whereNull('read_at')
             ->where('sender_id', '!=', auth()->id())
             ->update(['read_at' => now()]);
+
     }
 
+public function send()
+{
+    if (!$this->activeConversationId) return;
 
-    public function send()
-    {
-        if (!$this->activeConversationId) {
-            return;
-        }
+    $this->validate([
+        'body' => ['required', 'string', 'max:2000'],
+    ]);
 
-        $this->validate([
-            'body' => ['required', 'string', 'max:2000'],
-        ]);
+    $conversation = Conversation::findOrFail($this->activeConversationId);
 
-        $conversation = Conversation::findOrFail($this->activeConversationId);
+    abort_if(
+        auth()->id() !== $conversation->donor_id &&
+        auth()->id() !== $conversation->recipient_id,
+        403
+    );
 
-        abort_if(
-            auth()->id() !== $conversation->donor_id && auth()->id() !== $conversation->recipient_id,
-            403
-        );
+    if ($conversation->status !== 'open') {
+        $this->addError('body', 'Conversation is closed.');
+        return;
+    }
 
-        if ($conversation->status !== 'open') {
-            $this->addError('body', 'Conversation is closed.');
-            return;
-        }
+    $body = $this->body;
+    $this->reset('body');
+    $this->dispatch('clear-chat-box');
+    $this->resetValidation();
 
+    $message = DB::transaction(function () use ($conversation, $body) {
+
+        // اقفل الصف لمنع تضارب
+        $lockedConversation = Conversation::where('id', $conversation->id)
+            ->lockForUpdate()
+            ->first();
+
+        // عدد الرسائل قبل الإرسال
+        $messagesCount = Message::where('conversation_id', $lockedConversation->id)->count();
+
+        // إنشاء الرسالة
         $message = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => auth()->id(),
-            'body' => $this->body,
+            'conversation_id' => $lockedConversation->id,
+            'sender_id'       => auth()->id(),
+            'body'            => $body,
         ]);
 
-        // realtime event
-        event(new \App\Events\MessageSent($message));
+        // ✅ إذا أول رسالة فعلية + والمرسل donor
+if ($messagesCount !== 0 && auth()->id() === $lockedConversation->donor_id && $lockedConversation->glasses_id) {
 
-        $this->body = '';
-    }
+    $lockedConversation->glasses()
+        ->whereIn('status', ['reserved']) // أو ['reserved','available'] إذا بدك الاثنين
+        ->update([
+            'status' => 'in_contact'
+        ]);
+}
 
+$lockedConversation->glasses()
+        ->whereIn('status', ['reserved']) // أو ['reserved','available'] إذا بدك الاثنين
+        ->update([
+            'status' => 'in_contact'
+        ]);
+
+        return $message;
+    });
+
+    event(new \App\Events\MessageSent($message));
+}
     public function getListeners()
     {
         if (!$this->activeConversationId) return [];
@@ -127,6 +158,10 @@ class Inbox extends Component
                 ->get()
             : collect();
 
-        return view('components.chats.inbox', compact('conversations', 'active', 'messages'));
+        $existingComplaint = \App\Models\Complaint::where('conversation_id', $active->id)
+        ->where('reporter_id', auth()->id())
+        ->first();
+
+        return view('components.chats.inbox', compact('conversations', 'active', 'messages','existingComplaint'));
     }
 }

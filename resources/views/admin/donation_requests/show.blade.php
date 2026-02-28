@@ -59,20 +59,26 @@
             <div class="bg-white border rounded-2xl shadow-sm p-6">
                 <div class="flex items-start gap-5">
                     <div class="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 border shrink-0">
-                        @if($donationRequest->glasses?->primaryImage)
-                            <img src="{{ asset('storage/' . $donationRequest->glasses->primaryImage->path) }}"
-                                class="w-full h-full object-cover" alt="img">
-                        @else
-                            <div class="w-full h-full flex items-center justify-center text-xs text-gray-500">
-                                No image
-                            </div>
-                        @endif
+                        <a href="{{ route('admin.glasses.show', $donationRequest->glasses->id) }}">
+                            @if($donationRequest->glasses?->primaryImage)
+                                <img src="{{ asset('storage/' . $donationRequest->glasses->primaryImage->path) }}"
+                                    class="w-full h-full object-cover" alt="img">
+                            @else
+                                <div class="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                                    No image
+                                </div>
+                            @endif
+                        </a>
                     </div>
 
                     <div class="flex-1">
                         <p class="text-lg font-bold text-gray-800">
-                            {{ $donationRequest->glasses->title ?? 'Glasses' }}
+
+                            <a href="{{ route('admin.glasses.show', $donationRequest->glasses->id) }}">
+                                {{ $donationRequest->glasses->title ?? 'Glasses' }}
+                            </a>
                         </p>
+
 
                         <p class="text-sm text-gray-600 mt-1">
                             Delivered date:
@@ -125,23 +131,24 @@
 
                             @else
                                 <p class="text-sm font-semibold
-                                                            @if($confirmation->status === 'received')
-                                                                text-green-800
-                                                            @else
-                                                                text-red-800
-                                                            @endif
-                                                        ">
+                                                                                @if($confirmation->status === 'received')
+                                                                                    text-green-800
+                                                                                @else
+                                                                                    text-red-800
+                                                                                @endif
+                                                                            ">
                                     {{ $confirmation->status === 'received' ? 'Confirmed by recipient' : 'Delivery denied by recipient' }}
                                 </p>
 
                                 @if($confirmation->recipient_note)
-                                    <p class="text-sm mt-2
-                                                                                                            @if($confirmation->status === 'received')
-                                                                                                                text-green-900
-                                                                                                            @else
-                                                                                                                text-red-900
-                                                                                                            @endif
-                                                                                                        ">
+                                    <p
+                                        class="text-sm mt-2
+                                                                                                                                                    @if($confirmation->status === 'received')
+                                                                                                                                                        text-green-900
+                                                                                                                                                    @else
+                                                                                                                                                        text-red-900
+                                                                                                                                                    @endif
+                                                                                                                                                ">
                                         <span>Recipient note: </span> <span class="font-bold">
                                             {{ $confirmation->recipient_note }} </span>
                                     </p>

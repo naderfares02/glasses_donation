@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->enum('status', ['active', 'suspended'])->default('active')->after('role');
 
             // تعليق الحساب
-            $table->timestamp('suspended_at')->nullable()->after('status');
+            $table->timestamp(column: 'suspended_at')->nullable()->after('status');
             $table->unsignedBigInteger('suspended_by')->nullable()->after('suspended_at');
             $table->string('suspended_reason', 255)->nullable()->after('suspended_by');
 

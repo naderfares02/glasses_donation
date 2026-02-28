@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Recipient;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\ContactRequest;
 use App\Models\Glasses;
 use App\Models\User;

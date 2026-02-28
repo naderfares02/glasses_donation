@@ -3,17 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\DeliveryConfirmation;
 use App\Models\DonationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\DonorDonationApprovedNotification;
 use App\Notifications\DonorDonationRejectedNotification;
-
+use App\Models\Glasses;
+use App\Models\DonationReceipt;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DonationRequestController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request,Glasses $glasses)
     {
         $q = $request->string('q')->toString();
         $status = $request->string('status')->toString();
@@ -39,7 +42,7 @@ class DonationRequestController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('admin.donation_requests.index', compact('requests'));
+        return view('admin.donation_requests.index', compact('requests','glasses'));
     }
 
     public function show(DonationRequest $donationRequest)
@@ -55,19 +58,28 @@ class DonationRequestController extends Controller
         return view('admin.donation_requests.show', compact('donationRequest'));
     }
 
-    public function approve(Request $request, DonationRequest $donationRequest, DeliveryConfirmation $deliveryConfirmation)
+
+
+public function approve(Request $request, DonationRequest $donationRequest)
 {
     // يسمح بالموافقة حتى لو كان مرفوض سابقاً
-    if (!in_array($donationRequest->status, ['pending', 'rejected'])) {
+    if (!in_array($donationRequest->status, ['pending', 'rejected'], true)) {
         return back()->with('error', 'This request cannot be approved in its current status.');
     }
 
     $data = $request->validate([
-        'admin_note' => ['nullable', 'string', 'max:2000'],
+        'admin_note'      => ['nullable', 'string', 'max:2000'],
+        'delivered_date'  => ['nullable', 'date'],
     ]);
 
-    DB::transaction(function () use ($donationRequest, $data) {
+    // لو يوجد إيصال بالفعل
+    if ($donationRequest->receipt) {
+        return back()->with('error', 'Receipt already exists for this request.');
+    }
 
+    $receipt = DB::transaction(function () use ($donationRequest, $data) {
+
+        // 1) اعتماد الطلب
         $donationRequest->update([
             'status'      => 'approved',
             'admin_note'  => $data['admin_note'] ?? null,
@@ -75,30 +87,49 @@ class DonationRequestController extends Controller
             'reviewed_by' => auth()->id(),
         ]);
 
-        // ✅ بعد الموافقة: حدّث النظارة إلى donated (أو أي منطق عندك)
-        $donationRequest->glasses()->update([
-            'status' => 'donated',
+        // 2) تحديث النظارة
+        if ($donationRequest->glasses) {
+            $donationRequest->glasses->update(['status' => 'donated']);
+        }
+
+        // 3) إنشاء الإيصال في DB
+        $receipt = DonationReceipt::create([
+            'donation_request_id' => $donationRequest->id,
+            'glasses_id'          => $donationRequest->glasses_id,
+            'donor_id'            => $donationRequest->donor_id,
+            'recipient_id'        => $donationRequest->recipient_id,
+            'approved_by'         => auth()->id(),
+            'delivered_date'      => $data['delivered_date'] ?? null,
+            'admin_note'          => $data['admin_note'] ?? null,
+            'receipt_code'        => 'RCPT-' . strtoupper(Str::random(10)),
+            'issued_at'           => now(),
         ]);
 
-        $confirmation = $donationRequest->deliveryConfirmation();
-
-
-        if ($confirmation){
-            $confirmation->update([
-                'status' => 'received',
-                'updated_at' => now(),
-            ]);
-        }
-
-        $donationRequest->loadMissing('donor'); // ضروري
-
-        if ($donationRequest->donor) {
-            $donationRequest->donor->notify(new DonorDonationApprovedNotification($donationRequest));
-        }
-
+        return $receipt;
     });
 
-    return back()->with('success', 'Donation request approved.');
+    // ✅ توليد PDF خارج الترانزاكشن (أفضل)
+    $receipt->loadMissing(['donor', 'recipient', 'glasses', 'approver']);
+
+    $pdf = Pdf::loadView('receipts.pdf', [
+        'receipt' => $receipt,
+        'request' => $donationRequest,
+    ])->setPaper('a4');
+
+    $path = "receipts/{$receipt->receipt_code}.pdf";
+    Storage::disk('public')->put($path, $pdf->output());
+
+    $receipt->update(['pdf_path' => $path]);
+
+    // (اختياري) إشعار المتبرع
+    $donationRequest->loadMissing('donor');
+    if ($donationRequest->donor) {
+        $donationRequest->donor->notify(new DonorDonationApprovedNotification($donationRequest));
+    }
+
+    return redirect()
+        ->route('admin.receipts.show', $receipt->id)
+        ->with('success', 'Donation approved and receipt generated.');
 }
 
     public function reject(Request $request, DonationRequest $donationRequest)

@@ -15,7 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
         'role' => \App\Http\Middleware\CheckRole::class,
         'active' => \App\Http\Middleware\EnsureUserIsActive::class,
+        'maintenance' => \App\Http\Middleware\MaintenanceMode::class,
+        'registration' => \App\Http\Middleware\EnsureRegistrationEnabled::class,
+        'phone.verified' => \App\Http\Middleware\EnsurePhoneVerified::class,
     ]);
+
+    $middleware->appendToGroup('web', \App\Http\Middleware\MaintenanceMode::class);
 
     })
     ->withExceptions(function (Exceptions $exceptions): void {

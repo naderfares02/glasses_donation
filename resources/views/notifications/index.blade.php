@@ -28,17 +28,34 @@
             {{-- Tabs --}}
             <div class="bg-white border rounded-2xl shadow-sm p-4">
                 <div class="flex items-center gap-2">
-                    <a href="{{ route('notifications.index', ['tab' => 'unread']) }}"
-                        class="px-4 py-2 rounded-xl text-sm font-semibold border
-                              {{ $tab === 'unread' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-50' }}">
-                        Unread ({{ $counts['unread'] }})
-                    </a>
+                    @if (auth()->user()->role === 'recipient')
+                        <a href="{{ route('notifications.index', ['tab' => 'unread']) }}"
+                            class="px-4 py-2 rounded-xl text-sm font-semibold border
+                                                      {{ $tab === 'unread' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white hover:bg-gray-50' }}">
+                            Unread ({{ $counts['unread'] }})
+                        </a>
+                    @else
+                        <a href="{{ route('notifications.index', ['tab' => 'unread']) }}"
+                            class="px-4 py-2 rounded-xl text-sm font-semibold border
+                                                      {{ $tab === 'unread' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-50' }}">
+                            Unread ({{ $counts['unread'] }})
+                        </a>
+                    @endif
 
-                    <a href="{{ route('notifications.index', ['tab' => 'all']) }}"
-                        class="px-4 py-2 rounded-xl text-sm font-semibold border
-                              {{ $tab === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-50' }}">
-                        All ({{ $counts['all'] }})
-                    </a>
+                    @if (auth()->user()->role === 'recipient')
+                        <a href="{{ route('notifications.index', ['tab' => 'all']) }}"
+                            class="px-4 py-2 rounded-xl text-sm font-semibold border
+                                              {{ $tab === 'all' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white hover:bg-gray-50' }}">
+                            All ({{ $counts['all'] }})
+                        </a>
+                    @else
+                        <a href="{{ route('notifications.index', ['tab' => 'all']) }}"
+                            class="px-4 py-2 rounded-xl text-sm font-semibold border
+                                              {{ $tab === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-50' }}">
+                            All ({{ $counts['all'] }})
+                        </a>
+                    @endif
+
                 </div>
             </div>
 
@@ -53,53 +70,66 @@
 
                 <div class="divide-y">
                     @forelse($notifications as $n)
-                                    @php
-                                        $data = $n->data ?? [];
-                                        $title = $data['glasses_title'] ?? null;
-                                        $img = $data['glasses_image'] ?? null;
-                                        $message = $data['message'] ?? 'Notification';
-                                        $isUnread = is_null($n->read_at);
-                                    @endphp
+                        @php
+                            $data = $n->data ?? [];
 
-                                    <form method="POST" action="{{ route('notifications.read', $n->id) }}" class="w-full">
-                                        @csrf
+                            // ✅ دعم النظام القديم + الجديد
+                            $title = $data['title']
+                                ?? $data['glasses_title']
+                                ?? 'Notification';
 
-                                        <button type="submit" class="w-full text-left p-5 hover:bg-gray-50 transition
-                           {{ $isUnread ? 'bg-blue-50/40' : 'bg-white' }}">
+                            $message = $data['body']
+                                ?? $data['message']
+                                ?? $data['text']
+                                ?? 'You have a new notification.';
 
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div class="min-w-0">
-                                                    @if($title)
-                                                        <p class="font-bold text-gray-900 truncate">{{ $title }}</p>
-                                                    @else
-                                                        <p class="font-bold text-gray-900 truncate">Notification</p>
-                                                    @endif
+                            $url = $data['url'] ?? null;
 
-                                                    <p class="text-sm text-gray-700 mt-1">
-                                                        {{ $message }}
-                                                    </p>
-                                                </div>
+                            $isUnread = is_null($n->read_at);
+                        @endphp
 
-                                                <div class="flex flex-col items-end shrink-0">
-                                                    <p class="text-xs text-gray-500">
-                                                        {{ $n->created_at->diffForHumans() }}
-                                                    </p>
+                        {{-- إذا فيه رابط: خلي الضغط يودّي عليه + يعلّم كمقروء --}}
+                        <form method="POST" action="{{ route('notifications.read', $n->id) }}" class="w-full">
+                            @csrf
 
-                                                    @if($isUnread)
-                                                                    <span class="mt-2 inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full
-                                                           bg-blue-600 text-white">
-                                                                        New
-                                                                    </span>
-                                                    @else
-                                                                    <span class="mt-2 inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full
-                                                           bg-gray-100 text-gray-700 border">
-                                                                        Read
-                                                                    </span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </form>
+                            <button type="submit"
+                                class="w-full text-left p-5 hover:bg-gray-50 transition {{ $isUnread ? 'bg-blue-50/40' : 'bg-white' }}">
+
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-gray-900 truncate">{{ $title }}</p>
+
+                                        <p class="text-sm text-gray-700 mt-1">
+                                            {{ $message }}
+                                        </p>
+
+                                        {{-- @if($url)
+                                        <p class="text-xs text-blue-700 mt-2 font-semibold">
+                                            Click to open →
+                                        </p>
+                                        @endif --}}
+                                    </div>
+
+                                    <div class="flex flex-col items-end shrink-0">
+                                        <p class="text-xs text-gray-500">
+                                            {{ $n->created_at->diffForHumans() }}
+                                        </p>
+
+                                        @if($isUnread)
+                                            <span
+                                                class="mt-2 inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full bg-blue-600 text-white">
+                                                New
+                                            </span>
+                                        @else
+                                            <span
+                                                class="mt-2 inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-700 border">
+                                                Read
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </button>
+                        </form>
                     @empty
                         <div class="p-10 text-center text-gray-500">
                             No notifications.

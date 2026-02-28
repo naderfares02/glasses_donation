@@ -1,0 +1,23 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('key')->unique();               // مثال: site.name
+            $table->json('value')->nullable();             // نخزن أي نوع
+            $table->string('type')->default('string');     // string|bool|int|json|text
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('settings');
+    }
+};

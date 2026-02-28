@@ -15,6 +15,8 @@ class UserSeeder extends Seeder
             'name' => 'Donor User',
             'email' => 'donor@test.com',
             'password' => Hash::make('123123123'),
+            'phone' => '+4915123456789',
+            'city' => 'Munich',
             'role' => 'donor',
         ]);
 
@@ -23,14 +25,18 @@ class UserSeeder extends Seeder
             'name' => 'Recipient User',
             'email' => 'recipient@test.com',
             'password' => Hash::make('123123123'),
+            'phone' => '+4915123456788',
+            'city' => 'Berlin',
             'role' => 'recipient',
         ]);
-
+        
         // manager
         User::create([
             'name' => 'Manager User',
             'email' => 'admin@test.com',
             'password' => Hash::make('123123123'),
+            'phone' => '+4915123456786',
+            'city' => 'Cologne',
             'role' => 'admin',
         ]);
     }

@@ -26,12 +26,15 @@ class User extends Authenticatable
         'password',
         'role',
         'avatar',
+        'city',
+        'phone',
         'status',
         'suspended_at', 
         'suspended_by', 
         'suspended_reason',
         'role_changed_by', 
         'role_changed_at',
+
     ];
 
 
@@ -76,9 +79,19 @@ class User extends Authenticatable
         return $this->status === 'suspended';
     }
     
-    public function glasses()
-{
-    return $this->hasMany(Glasses::class);
-}
+        public function glasses()
+    {
+        return $this->hasMany(Glasses::class);
+    }
+
+    public function donationReceipts()
+    {
+        return $this->hasMany(DonationReceipt::class, 'donor_id');
+    }
+
+        public function receivedDonationReceipts()
+    {
+        return $this->hasMany(DonationReceipt::class, 'recipient_id');
+    }
 
 }

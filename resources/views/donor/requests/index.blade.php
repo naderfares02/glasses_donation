@@ -1,127 +1,201 @@
+@php
+    $status = $glasses->status ?? 'unknown';
+
+    $statusBadge = match ($status) {
+        'available' => 'bg-green-50 text-green-700 border-green-200',
+        'reserved' => 'bg-purple-50 text-purple-700 border-purple-200',
+        'in_contact' => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+        'pending_donation' => 'bg-amber-50 text-amber-800 border-amber-200',
+        'donated' => 'bg-blue-50 text-blue-700 border-blue-200',
+        default => 'bg-gray-50 text-gray-700 border-gray-200',
+    };
+
+    $hasActive = !empty($glasses->active_contact_request_id);
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800">
-                Contact Requests
-            </h2>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Contact Requests</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    Manage requests for this listing and start a chat after accepting.
+                </p>
+            </div>
 
             <a href="{{ route('donor.glasses.index') }}"
-                class="text-sm font-semibold text-blue-700 hover:text-blue-800">
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold text-gray-800">
                 ← Back to My Glasses
             </a>
         </div>
     </x-slot>
 
     <div class="py-10">
-        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            {{-- Flash messages --}}
+            {{-- Flash --}}
             @if(session('success'))
-                <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-                    {{ session('success') }}
+                <div class="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-green-800">
+                    <p class="font-semibold text-sm">Success</p>
+                    <p class="text-sm mt-1">{{ session('success') }}</p>
                 </div>
             @endif
 
             @if(session('error'))
-                <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-                    {{ session('error') }}
+                <div class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-800">
+                    <p class="font-semibold text-sm">Error</p>
+                    <p class="text-sm mt-1">{{ session('error') }}</p>
                 </div>
             @endif
 
-            {{-- Glasses info --}}
-            <div class="bg-white border rounded-xl p-6 shadow-sm mb-6">
-                <p class="text-sm text-gray-500">Glasses</p>
-                <p class="text-lg font-semibold text-gray-800">{{ $glasses->title }}</p>
-                <p class="text-sm text-gray-500 mt-1">Status:
-                    <span class="font-semibold">{{ ucfirst($glasses->status) }}</span>
-                </p>
+            {{-- Glasses summary card --}}
+            <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b bg-gray-50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-xs text-gray-500">Glasses</p>
+                        <p class="text-lg font-extrabold text-gray-900 mt-1 truncate">
+                            <a href="{{ route('donor.glasses.show', $glasses->id) }}">
+                                {{ $glasses->title }}
+                            </a>
+                        </p>
+
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <span
+                                class="inline-flex items-center px-3 py-1 rounded-full border text-xs font-semibold {{ $statusBadge }}">
+                                {{ strtoupper(str_replace('_', ' ', $status)) }}
+                            </span>
+
+                            @if($hasActive)
+                                <span
+                                    class="inline-flex items-center px-3 py-1 rounded-full border text-xs font-semibold bg-blue-50 text-blue-700 border-blue-200">
+                                    ACTIVE REQUEST SELECTED
+                                </span>
+                            @else
+                                <span
+                                    class="inline-flex items-center px-3 py-1 rounded-full border text-xs font-semibold bg-gray-50 text-gray-700 border-gray-200">
+                                    NO ACTIVE REQUEST
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="text-sm text-gray-600">
+                        <p class="text-xs text-gray-500">Total requests</p>
+                        <p class="text-2xl font-extrabold text-gray-900 mt-1">
+                            {{ $requests->count() }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div class="rounded-2xl border bg-gray-50 p-4">
+                        <p class="text-sm text-gray-700 font-semibold">How it works</p>
+                        <p class="text-sm text-gray-600 mt-1">
+                            When you accept a request, this glasses will be reserved for that recipient to avoid
+                            conflicts.
+                            You can then message them from the chat button.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            {{-- Requests List --}}
-            <div class="bg-white border rounded-xl shadow-sm overflow-hidden">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-gray-50 border-b">
-                        <tr>
-                            <th class="p-4">Recipient</th>
-                            <th class="p-4">Email</th>
-                            <th class="p-4">Requested At</th>
-                            <th class="p-4">Status</th>
-                            <th class="p-4 text-center">Actions</th>
-                        </tr>
-                    </thead>
+            {{-- Requests --}}
+            <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b bg-gray-50 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Requests</p>
+                        <p class="text-xs text-gray-500 mt-1">Accept one request only, or review all.</p>
+                    </div>
+                </div>
 
-                    <tbody>
-                        @forelse($requests as $request)
-                            <tr class="border-b hover:bg-gray-50 @if($request->status === 'accepted') bg-green-50 @endif">
-                                <td class="p-4 font-semibold text-gray-800">
-                                    {{ $request->recipient->name }}
-                                </td>
+                @if($requests->count() === 0)
+                    <div class="p-12 text-center text-gray-600">
+                        <p class="font-semibold">No contact requests yet.</p>
+                        <p class="text-sm text-gray-500 mt-2">When a recipient requests contact, it will appear here.</p>
+                    </div>
+                @else
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($requests as $request)
+                            @php
+                                $rStatus = $request->status;
 
-                                <td class="p-4 text-gray-600">
-                                    {{ $request->recipient->email }}
-                                </td>
+                                $badge = match ($rStatus) {
+                                    'pending' => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                    'accepted' => 'bg-green-50 text-green-700 border-green-200',
+                                    'rejected' => 'bg-red-50 text-red-700 border-red-200',
+                                    'closed' => 'bg-gray-50 text-gray-700 border-gray-200',
+                                    default => 'bg-gray-50 text-gray-700 border-gray-200',
+                                };
 
-                                <td class="p-4 text-gray-500">
-                                    {{ $request->created_at->format('Y-m-d H:i') }}
-                                </td>
+                                $canDecide = ($rStatus === 'pending' && !$hasActive);
+                            @endphp
 
-                                <td class="p-4">
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-full
-                                                                                        @if($request->status === 'pending') bg-yellow-50 text-yellow-700 border border-yellow-200
-                                                                                        @elseif($request->status === 'accepted') bg-green-50 text-green-700 border border-green-200
-                                                                                        @elseif($request->status === 'rejected') bg-red-50 text-red-700 border border-red-200
-                                                                                        @elseif($request->status === 'closed') bg-gray-100 text-gray-600 border border-gray-200
-                                                                                        @endif">
-                                        {{ ucfirst($request->status) }}
+                            <div class="rounded-3xl border bg-white overflow-hidden">
+                                <div class="p-5 border-b bg-gray-50 flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-extrabold text-gray-900 truncate">
+                                            {{ $request->recipient->name }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1 truncate">
+                                            {{ $request->recipient->email }}
+                                        </p>
+                                    </div>
+
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full border text-xs font-semibold {{ $badge }}">
+                                        {{ strtoupper($rStatus) }}
                                     </span>
-                                </td>
+                                </div>
 
-                                <td class="p-4 text-center">
-                                    @if($request->status === 'pending' && !$glasses->active_contact_request_id)
+                                <div class="p-5">
+                                    <div class="flex items-center justify-between text-sm">
+                                        <p class="text-gray-500">Requested at</p>
+                                        <p class="font-semibold text-gray-900">
+                                            {{ $request->created_at?->format('Y-m-d H:i') ?? '—' }}
+                                        </p>
+                                    </div>
 
-                                        {{-- Accept --}}
-                                        <form method="POST" action="{{ route('donor.requests.accept', $request->id) }}"
-                                            class="inline">
-                                            @csrf
-                                            <button
-                                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                                                Accept
-                                            </button>
-                                        </form>
+                                    <div class="mt-5 flex flex-wrap gap-2">
+                                        @if($canDecide)
+                                            {{-- Accept --}}
+                                            <form method="POST" action="{{ route('donor.requests.accept', $request->id) }}">
+                                                @csrf
+                                                <button type="submit"
+                                                    onclick="return confirm('Accept this request? The glasses will be reserved for this recipient.');"
+                                                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold">
+                                                    Accept
+                                                </button>
+                                            </form>
 
-                                        {{-- Reject --}}
-                                        <form method="POST" action="{{ route('donor.requests.reject', $request->id) }}"
-                                            class="inline ml-2">
-                                            @csrf
-                                            <button
-                                                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                                                Reject
-                                            </button>
-                                        </form>
+                                            {{-- Reject --}}
+                                            <form method="POST" action="{{ route('donor.requests.reject', $request->id) }}">
+                                                @csrf
+                                                <button type="submit" onclick="return confirm('Reject this request?');"
+                                                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border bg-red-50 hover:bg-red-100 text-red-700 text-sm font-semibold">
+                                                    Reject
+                                                </button>
+                                            </form>
 
-                                    @elseif($request->status === 'accepted')
+                                        @elseif($rStatus === 'accepted')
+                                            {{-- Message --}}
+                                            <a href="{{ route('donor.chats.index', ['conversation' => $request->conversation]) }}"
+                                                class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
+                                                Message Recipient
+                                            </a>
 
-                                        {{-- NEW: Open Conversation Button --}}
-                                        <a href="{{ route('donor.chats.index', ['conversation' => $request->conversation]) }}"
-                                            class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                                            Message Recipient
-                                        </a>
+                                            <span class="text-xs text-gray-500 self-center">
+                                                This request is the active one.
+                                            </span>
 
-                                    @else
-                                        <span class="text-gray-400 text-sm">No actions</span>
-                                    @endif
-                                </td>
-
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="p-6 text-center text-gray-500">
-                                    No contact requests yet.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                        @else
+                                            <span class="text-sm text-gray-500">No actions available.</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
         </div>

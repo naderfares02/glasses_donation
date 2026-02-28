@@ -24,6 +24,11 @@ class DatabaseSeeder extends Seeder
                 UserSeeder::class,
         ]);
 
+        $this->call([
+        LegalPagesSeeder::class,
+        ]);
+
+        $this->call(SettingsSeeder::class);
 
         // User::factory(10)->create();
         // User::factory()->create([

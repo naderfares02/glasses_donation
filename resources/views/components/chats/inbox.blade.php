@@ -1,10 +1,15 @@
+{{-- resources/views/components/chats/inbox.blade.php --}}
+
 <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
     <div class="grid grid-cols-1 lg:grid-cols-3 min-h-[650px]">
 
-        {{-- Sidebar --}}
-        <div class="lg:col-span-1 border-b lg:border-b-0 lg:border-r">
+        {{-- =========================
+        Sidebar (Conversations)
+        ========================== --}}
+        <aside class="lg:col-span-1 border-b lg:border-b-0 lg:border-r">
             <div class="p-4 bg-gray-50 border-b">
                 <p class="text-sm font-semibold text-gray-700">Messages</p>
+                <p class="text-xs text-gray-500 mt-1">Select a conversation to continue.</p>
             </div>
 
             <div class="max-h-[650px] overflow-y-auto">
@@ -12,6 +17,7 @@
                     @php
                         $other = auth()->id() === $c->donor_id ? $c->recipient : $c->donor;
                         $last = $c->messages->first();
+
                         $unread = \App\Models\Message::where('conversation_id', $c->id)
                             ->whereNull('read_at')
                             ->where('sender_id', '!=', auth()->id())
@@ -19,28 +25,27 @@
                     @endphp
 
                     <button wire:click="setActive({{ $c->id }})"
-                        class="w-full text-left p-4 border-b hover:bg-gray-50 {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
+                        class="w-full text-left p-4 border-b hover:bg-gray-50 transition
+                                                                                   {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
                         <div class="flex gap-3">
-                            @php
-                                $other = auth()->id() === $c->donor_id ? $c->recipient : $c->donor;
-                            @endphp
-
+                            {{-- Avatar --}}
                             <div
                                 class="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 border shrink-0 flex items-center justify-center">
-                                @if($other->avatar)
+                                @if($other?->avatar)
                                     <img src="{{ asset('storage/' . $other->avatar) }}" class="w-full h-full object-cover"
                                         alt="avatar">
                                 @else
-                                    <div class="w-full h-full flex items-center justify-center
-                                                                    text-sm font-bold text-gray-700">
-                                        {{ strtoupper(substr($other->name, 0, 1)) }}
+                                    <div class="w-full h-full flex items-center justify-center text-sm font-bold text-gray-700">
+                                        {{ strtoupper(substr($other?->name ?? 'U', 0, 1)) }}
                                     </div>
                                 @endif
                             </div>
 
+                            {{-- Text --}}
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-start justify-between gap-2">
-                                    <p class="font-semibold text-gray-800 truncate">{{ $other->name }}</p>
+                                    <p class="font-semibold text-gray-800 truncate">{{ $other?->name ?? 'User' }}</p>
+
                                     @if($unread > 0)
                                         <span class="text-xs font-bold text-white bg-red-600 rounded-full px-2 py-0.5">
                                             {{ $unread }}
@@ -62,153 +67,310 @@
                     <div class="p-6 text-center text-gray-500">No conversations yet.</div>
                 @endforelse
             </div>
-        </div>
+        </aside>
 
-        {{-- Chat Window --}}
-        <div class="lg:col-span-2 flex flex-col">
+        {{-- =========================
+        Chat Window
+        ========================== --}}
+        <section class="lg:col-span-2 flex flex-col">
             @if($active)
-                @php
-                    $other = auth()->id() === $active->donor_id ? $active->recipient : $active->donor;
-                @endphp
+                    @php
+                        $other = auth()->id() === $active->donor_id ? $active->recipient : $active->donor;
+                    @endphp
 
-                <div class="p-4 border-b bg-gray-50 flex items-center justify-between">
-                    <div>
-                        <p class="font-semibold text-gray-800">{{ $other->name }}</p>
-                        <p class="text-xs text-gray-500">{{ $active->glasses->title ?? '' }}</p>
-                    </div>
+                    {{-- Header --}}
+                    <div class="p-4 border-b bg-gray-50 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="font-semibold text-gray-800 truncate">{{ $other?->name ?? 'User' }}</p>
 
-                    <div x-data="{ openDonate:false }" class="flex items-center gap-3">
-                        {{-- Status badge --}}
-                        <span
-                            class="text-xs font-semibold px-3 py-1 rounded-full
-                                    {{ $active->status === 'open' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-700 border border-gray-200' }}">
-                            {{ strtoupper($active->status) }}
-                        </span>
+                            @if (auth()->user()->role === 'recipient')
+                                <p class="text-xs text-gray-500 truncate"><a
+                                        href="{{ route('recipient.glasses.show', $active->glasses->id) }}">{{ $active->glasses->title ?? '' }}</a>
+                                </p>
+                            @else
+                                <p class="text-xs text-gray-500 truncate"><a
+                                        href="{{ route('donor.glasses.show', $active->glasses->id) }}">{{ $active->glasses->title ?? '' }}</a>
+                                </p>
+                            @endif
 
-                        @if(auth()->user()->role === 'donor' && $active->status === 'open')
+                        </div>
 
-                            {{-- زر يفتح الفورم --}}
-                            <button type="button" @click="openDonate = true"
-                                class="text-xs font-semibold px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white">
-                                Mark as Donated
-                            </button>
+                        {{-- Right side actions --}}
+                        <div x-data="{ openDonate:false, openReport:false, openActions:false }"
+                            class="flex items-center gap-2 shrink-0"
+                            @keydown.escape.window="openDonate=false; openReport=false; openActions=false">
 
-                            {{-- Disconnect --}}
-                            <form method="POST" action="{{ route('donor.conversations.disconnect', $active->id) }}"
-                                onsubmit="return confirm('Disconnect and make this glasses available again?');">
-                                @csrf
-                                <button type="submit"
-                                    class="text-xs font-semibold px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white">
-                                    Disconnect
+                            {{-- Status badge --}}
+                            <span class="text-xs font-semibold px-3 py-1 rounded-full border
+                                                                                                                                            {{ $active->status === 'open'
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-gray-100 text-gray-700 border-gray-200' }}">
+                                {{ strtoupper($active->status) }}
+                            </span>
+
+                            {{-- ✅ Report / Complaint (للجميع donor + recipient) --}}
+                            @php
+                                $myComplaint = \App\Models\Complaint::where('conversation_id', $active->id)
+                                    ->where('reporter_id', auth()->id())
+                                    ->first();
+                            @endphp
+
+                            @if($myComplaint)
+                                {{-- يوجد شكوى بالفعل --}}
+                                <a href="{{ route('complaints.show', $myComplaint->id) }}"
+                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-red-50 hover:bg-red-100 text-xs font-semibold text-red-700">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M9 12h6m-6 4h6M9 8h6M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H7l-4 4V6a2 2 0 012-2z" />
+                                    </svg>
+                                    View Report
+                                </a>
+                            @else
+                                {{-- لا يوجد شكوى --}}
+                                <button type="button" @click="openReport = true"
+                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white hover:bg-gray-50 text-xs font-semibold text-gray-800">
+                                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M12 9v4m0 4h.01M5 21h14a2 2 0 001.732-3L13.732 4a2 2 0 00-3.464 0L3.268 18A2 2 0 005 21z" />
+                                    </svg>
+                                    Report
                                 </button>
-                            </form>
+                            @endif
 
-                            {{-- Modal --}}
-                            <div x-show="openDonate" x-transition class="fixed inset-0 z-50 flex items-center justify-center">
+                            {{-- Donor actions dropdown --}}
+                            @if(auth()->user()->role === 'donor' && $active->status === 'open')
+                                <div class="relative">
+                                    <button type="button" @click="openActions=!openActions"
+                                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white hover:bg-gray-50 text-xs font-semibold text-gray-800">
+                                        Actions
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
 
-                                {{-- overlay --}}
-                                <div class="absolute inset-0 bg-black/40" @click="openDonate=false"></div>
+                                    <div x-cloak x-show="openActions" @click.outside="openActions=false" x-transition
+                                        class="absolute right-0 mt-2 w-56 bg-white border rounded-2xl shadow-lg overflow-hidden z-50">
+                                        <button type="button" @click="openActions=false; openDonate=true"
+                                            class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50">
+                                            Mark as Donated
+                                        </button>
 
-                                {{-- modal card --}}
-                                <div class="relative bg-white w-full max-w-lg rounded-2xl shadow-xl p-6">
-                                    <div class="flex items-start justify-between">
+                                        <form method="POST" action="{{ route('donor.conversations.disconnect', $active->id) }}"
+                                            onsubmit="return confirm('Disconnect and make this glasses available again?');">
+                                            @csrf
+                                            <button type="submit"
+                                                class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                                                Disconnect
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- =========================
+                            ✅ Complaint Modal
+                            ========================== --}}
+                            <div x-cloak x-show="openReport" x-transition
+                                class="fixed inset-0 z-50 flex items-center justify-center px-4">
+                                <div class="absolute inset-0 bg-black/40" @click="openReport=false"></div>
+
+                                <div class="relative bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+                                    <div class="p-5 border-b bg-gray-50 flex items-start justify-between">
                                         <div>
-                                            <p class="text-lg font-bold text-gray-800">Request donation confirmation</p>
+                                            <p class="text-lg font-bold text-gray-800">Report an issue</p>
                                             <p class="text-sm text-gray-600 mt-1">
-                                                This will send a request to admin for review. Glasses will become
-                                                <b>Pending</b>.
+                                                This will create a complaint to admins about this chat/listing.
                                             </p>
                                         </div>
-                                        <button class="p-2 hover:bg-gray-100 rounded-lg" @click="openDonate=false">✕</button>
+                                        <button type="button" class="p-2 hover:bg-gray-100 rounded-xl"
+                                            @click="openReport=false">✕</button>
                                     </div>
-
-                                    <form method="POST" action="{{ route('donor.glasses.mark_donated', $active->glasses_id) }}"
-                                        class="mt-5">
+                                    <form method="POST"
+                                        action="{{ route('complaints.store', ['conversation' => $active->id]) }}" class="p-5">
                                         @csrf
-                                        <input type="hidden" name="conversation_id" value="{{ $active->id }}">
 
                                         <div class="space-y-4">
                                             <div>
-                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Delivered date
-                                                    (optional)</label>
-                                                <input type="date" name="delivered_date"
-                                                    class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200">
+                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Reason</label>
+                                                <select name="reason" required
+                                                    class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-200">
+                                                    <option value="">Select reason</option>
+                                                    <option value="harassment">Harassment</option>
+                                                    <option value="scam">Scam</option>
+                                                    <option value="spam">Spam</option>
+                                                    <option value="inappropriate_behavior">Inappropriate behavior</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                                @error('reason') <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+
+                                            {{-- ✅ هذه هي الرسالة التي ستذهب إلى complaint_messages --}}
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Message</label>
+                                                <textarea name="body" rows="5" required maxlength="3000"
+                                                    class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-200"
+                                                    placeholder="Write what happened..."></textarea>
+                                                @error('body') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
                                             </div>
 
                                             <div>
-                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Note for admin
+                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Extra details
                                                     (optional)</label>
-                                                <textarea name="donor_note" rows="4"
-                                                    class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
-                                                    placeholder="Any details that help the admin verify the donation..."></textarea>
+                                                <textarea name="description" rows="3" maxlength="2000"
+                                                    class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-200"
+                                                    placeholder="Any extra details for the admin..."></textarea>
+                                                @error('description') <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                                                @enderror
                                             </div>
                                         </div>
 
                                         <div class="mt-6 flex items-center justify-end gap-3">
-                                            <button type="button" @click="openDonate=false"
+                                            <button type="button" @click="openReport=false"
                                                 class="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200">
                                                 Cancel
                                             </button>
 
                                             <button type="submit"
-                                                class="px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white">
-                                                Send to Admin
+                                                class="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white">
+                                                Submit Report
                                             </button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
 
+                            {{-- =========================
+                            Donor Donate Modal
+                            ========================== --}}
+                            @if(auth()->user()->role === 'donor' && $active->status === 'open')
+                                <div x-cloak x-show="openDonate" x-transition
+                                    class="fixed inset-0 z-50 flex items-center justify-center px-4">
+                                    <div class="absolute inset-0 bg-black/40" @click="openDonate=false"></div>
+
+                                    <div class="relative bg-white w-full max-w-lg rounded-2xl shadow-xl p-6">
+                                        <div class="flex items-start justify-between">
+                                            <div>
+                                                <p class="text-lg font-bold text-gray-800">Request donation confirmation</p>
+                                                <p class="text-sm text-gray-600 mt-1">
+                                                    This will send a request to admin for review. Glasses will become
+                                                    <b>Pending</b>.
+                                                </p>
+                                            </div>
+                                            <button type="button" class="p-2 hover:bg-gray-100 rounded-xl"
+                                                @click="openDonate=false">✕</button>
+                                        </div>
+
+                                        <form method="POST" action="{{ route('donor.glasses.mark_donated', $active->glasses_id) }}"
+                                            class="mt-5">
+                                            @csrf
+                                            <input type="hidden" name="conversation_id" value="{{ $active->id }}">
+
+                                            <div class="space-y-4">
+                                                <div>
+                                                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                                                        Delivered date (optional)
+                                                    </label>
+                                                    <input type="date" name="delivered_date"
+                                                        class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                                                        Note for admin (optional)
+                                                    </label>
+                                                    <textarea name="donor_note" rows="4"
+                                                        class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
+                                                        placeholder="Any details that help the admin verify the donation..."></textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-6 flex items-center justify-end gap-3">
+                                                <button type="button" @click="openDonate=false"
+                                                    class="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200">
+                                                    Cancel
+                                                </button>
+
+                                                <button type="submit"
+                                                    class="px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white">
+                                                    Send to Admin
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endif
+
+                        </div>
+                    </div>
+
+                    {{-- Messages --}}
+                    <div class="flex-1 p-5 overflow-y-auto space-y-3 bg-white">
+                        @forelse($messages as $m)
+                            @php $mine = $m->sender_id === auth()->id(); @endphp
+
+                            <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
+                                <div
+                                    class="max-w-[75%] rounded-2xl px-4 py-3 {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
+                                    <p class="text-sm whitespace-pre-line">{{ $m->body }}</p>
+                                    <p class="text-[11px] mt-2 opacity-75">
+                                        {{ $m->created_at->format('Y-m-d H:i') }}
+                                    </p>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center text-gray-500 text-sm py-10">No messages yet.</div>
+                        @endforelse
+                    </div>
+
+                    {{-- Send box --}}
+                    <div class="p-4 border-t bg-gray-50">
+                        @if($active->status === 'open')
+                            <form wire:submit.prevent="send" class="flex gap-3">
+                                <textarea wire:model.defer="body" rows="2"
+                                    class="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-200"
+                                    placeholder="Write a message..."></textarea>
+
+                                @if (auth()->user()->role === 'recipient')
+                                    <button type="submit"
+                                        class="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 rounded-xl">
+                                        Send
+                                @else
+                                        <button type="submit"
+                                            class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
+                                            Send
+                                    @endif
+
+                                    </button>
+                            </form>
+
+                            {{-- Clear input event (اختياري إنك تستخدمه بالـ Livewire emit) --}}
+                            <script>
+                                document.addEventListener('livewire:init', () => {
+                                    Livewire.on('clear-chat-box', () => {
+                                        const el = document.querySelector('textarea[wire\\:model\\.defer="body"]');
+                                        if (el) el.value = '';
+                                    });
+                                });
+                            </script>
+
+                            @error('body')
+                                <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                            @enderror
+                        @else
+                            <p class="text-sm text-gray-600">This conversation is closed.</p>
                         @endif
                     </div>
 
-                </div>
-
-
-                <div class="flex-1 p-5 overflow-y-auto space-y-3 bg-white">
-                    @forelse($messages as $m)
-                        @php $mine = $m->sender_id === auth()->id(); @endphp
-                        <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
-                            <div
-                                class="max-w-[75%] rounded-2xl px-4 py-3
-                                                                                                                        {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
-                                <p class="text-sm whitespace-pre-line">{{ $m->body }}</p>
-                                <p class="text-[11px] mt-2 opacity-75">
-                                    {{ $m->created_at->format('Y-m-d H:i') }}
-                                </p>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="text-center text-gray-500 text-sm py-10">No messages yet.</div>
-                    @endforelse
-                </div>
-
-                <div class="p-4 border-t bg-gray-50">
-                    @if($active->status === 'open')
-                        <form wire:submit.prevent="send" class="flex gap-3">
-                            <textarea wire:model.defer="body" rows="2"
-                                class="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-200"
-                                placeholder="Write a message..."></textarea>
-
-                            <button type="submit"
-                                class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
-                                Send
-                            </button>
-                        </form>
-
-                        @error('body')
-                            <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
-                        @enderror
-                    @else
-                        <p class="text-sm text-gray-600">This conversation is closed.</p>
-                    @endif
-                </div>
             @else
                 <div class="p-10 text-center text-gray-500">
                     Select a conversation from the left.
                 </div>
             @endif
-        </div>
+        </section>
 
     </div>
 </div>

@@ -94,69 +94,69 @@
                         @if($role === 'donor')
                             <a href="{{ route('donor.main_page') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('donor.main_page') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('donor.main_page') ? $theme['linkActive'] : $theme['link'] }}">
                                 Home
                             </a>
 
                             <a href="{{ route('donor.glasses.index') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('donor.glasses.*') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('donor.glasses.*') ? $theme['linkActive'] : $theme['link'] }}">
                                 My Glasses
                             </a>
 
                             {{-- <a href="{{ route('donor.chats.index') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('donor.chats.*') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('donor.chats.*') ? $theme['linkActive'] : $theme['link'] }}">
                                 Chats
                             </a> --}}
 
                         @elseif($role === 'recipient')
                             <a href="{{ route('recipient.main_page') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('recipient.main_page') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('recipient.main_page') ? $theme['linkActive'] : $theme['link'] }}">
                                 Home
                             </a>
 
                             <a href="{{ route('recipient.donations.index') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('recipient.donations.*') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('recipient.donations.*') ? $theme['linkActive'] : $theme['link'] }}">
                                 Donations
                             </a>
 
                             {{-- <a href="{{ route('recipient.chats.index') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('recipient.chats.*') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('recipient.chats.*') ? $theme['linkActive'] : $theme['link'] }}">
                                 Chats
                             </a> --}}
 
                         @elseif(in_array($role, ['admin', 'super_admin']))
                             <a href="{{ route('admin.dashboard') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('admin.dashboard') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('admin.dashboard') ? $theme['linkActive'] : $theme['link'] }}">
                                 Dashboard
                             </a>
 
                             <a href="{{ route('admin.users.index') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('admin.users.*') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('admin.users.*') ? $theme['linkActive'] : $theme['link'] }}">
                                 Users
                             </a>
 
                             <a href="{{ route('admin.glasses.index') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('admin.glasses.*') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('admin.glasses.*') ? $theme['linkActive'] : $theme['link'] }}">
                                 Glasses
                             </a>
 
                             <a href="{{ route('admin.donation_requests.index') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('admin.donation_requests.index.*') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('admin.donation_requests.*') ? $theme['linkActive'] : $theme['link'] }}">
                                 Donation Requests
                             </a>
 
                             <a href="{{ route('admin.complaints.index') }}"
                                 class="px-3 py-2 text-sm font-semibold border-b-2
-                                                                                       {{ request()->routeIs('admin.complaints.index.*') ? $theme['linkActive'] : $theme['link'] }}">
+                                                                                                               {{ request()->routeIs('admin.complaints.*') ? $theme['linkActive'] : $theme['link'] }}">
                                 Reports
                             </a>
                         @endif
@@ -165,7 +165,7 @@
                     @guest
                         <a href="{{ route($homeRoute) }}"
                             class="px-3 py-2 text-sm font-semibold border-b-2
-                                                       {{ request()->routeIs($homeRoute) ? 'text-blue-700 border-blue-600' : 'text-gray-700 border-transparent hover:border-gray-300' }}">
+                                                                   {{ request()->routeIs($homeRoute) ? 'text-blue-700 border-blue-600' : 'text-gray-700 border-transparent hover:border-gray-300' }}">
                             Home
                         </a>
                     @endguest

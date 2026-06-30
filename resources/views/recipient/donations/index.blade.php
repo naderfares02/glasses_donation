@@ -90,10 +90,10 @@
 
                                 {{-- status badge --}}
                                 <span class="text-xs font-semibold px-3 py-1 rounded-full border
-                                                                {{ $c->status === 'pending' ? 'bg-blue-50 text-blue-700 border-blue-200' : '' }}
-                                                                {{ $c->status === 'received' ? 'bg-green-50 text-green-700 border-green-200' : '' }}
-                                                                {{ $c->status === 'not_received' ? 'bg-red-50 text-red-700 border-red-200' : '' }}
-                                                            ">
+                                                                                                                {{ $c->status === 'pending' ? 'bg-blue-50 text-blue-700 border-blue-200' : '' }}
+                                                                                                                {{ $c->status === 'received' ? 'bg-green-50 text-green-700 border-green-200' : '' }}
+                                                                                                                {{ $c->status === 'not_received' ? 'bg-red-50 text-red-700 border-red-200' : '' }}
+                                                                                                            ">
                                     {{ strtoupper($c->status) }}
                                 </span>
                             </div>
@@ -119,6 +119,11 @@
                                         </p>
                                     </div>
                                 </div>
+                            @elseif($c->status === 'received')
+                                <div class="mt-3 p-4 bg-green-50 border rounded-xl">
+                                    <p class="text-xs font-semibold text-gray-500 mb-1">Your note</p>
+                                    <p class="text-sm text-red-800 whitespace-pre-line italic">No note added</p>
+                                </div>
                             @endif
 
                             <div class="mt-5 flex items-center justify-between">
@@ -133,12 +138,13 @@
                                     @if($tab === 'received' && $drStatus === 'approved')
                                         <div
                                             class="mt-3 inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full
-                                                                                    bg-green-50 text-green-700 border border-green-200">
+                                                                                                                                                                                                                                    bg-green-50 text-green-700 border border-green-200">
                                             ✅ Approved by admin
                                         </div>
                                     @elseif($tab === 'received' && $drStatus === 'pending')
-                                        <div class="mt-3 inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full
-                                                                                    border bg-amber-50 border-amber-200">
+                                        <div
+                                            class="mt-3 inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full
+                                                                                                                                                                                                                                    border bg-amber-50 border-amber-200">
                                             ⚠️ Reviewing by admin
                                         </div>
                                     @endif
@@ -150,6 +156,12 @@
                                     <a href="{{ route('recipient.confirmations.show', $c->id)}}"
                                         class="text-sm font-semibold text-blue-700 hover:text-blue-800">
                                         Confirm →
+                                    </a>
+                                @elseif ($c->status === 'not_received')
+                                    <span class="text-xs text-gray-500">Action required</span>
+                                    <a href="{{ route('recipient.confirmations.show', $c->id)}}"
+                                        class="text-sm font-semibold text-blue-700 hover:text-blue-800">
+                                        Change the status →
                                     </a>
                                 @endif
                             </div>

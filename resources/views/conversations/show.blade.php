@@ -58,7 +58,7 @@
 
                         <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
                             <div class="max-w-[75%] rounded-2xl px-4 py-3
-                                                {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
+                                                    {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
                                 <p class="text-sm whitespace-pre-line">{{ $m->body }}</p>
                                 <p class="text-[11px] mt-2 opacity-75">
                                     {{ $m->created_at->format('Y-m-d H:i') }}

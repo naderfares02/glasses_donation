@@ -57,14 +57,16 @@
 
                         @if($confirmation->recipient_note)
                             <div class="mt-4 p-4 rounded-xl border
-                                                            {{ $confirmation->status === 'received' ? 'bg-green-50 border-green-200 text-green-900' : '' }}
-                                                            {{ $confirmation->status === 'not_received' ? 'bg-red-50 border-red-200 text-red-900' : '' }}
-                                                            {{ $confirmation->status === 'pending' ? 'bg-gray-50 border-gray-200 text-gray-800' : '' }}
-                                                        ">
+                                                                                    {{ $confirmation->status === 'received' ? 'bg-green-50 border-green-200 text-green-900' : '' }}
+                                                                                    {{ $confirmation->status === 'not_received' ? 'bg-red-50 border-red-200 text-red-900' : '' }}
+                                                                                    {{ $confirmation->status === 'pending' ? 'bg-gray-50 border-gray-200 text-gray-800' : '' }}
+                                                                                ">
                                 <p class="text-xs font-semibold opacity-80 mb-1">Your note</p>
                                 <p class="text-sm whitespace-pre-line">{{ $confirmation->recipient_note }}</p>
                             </div>
                         @endif
+
+
 
                         <div class="mt-4">
                             {{-- رابط صفحة النظارة --}}
@@ -121,6 +123,26 @@
 
                     <div class="p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 text-sm">
                         You have confirmed that you received the glasses.
+                    </div>
+                </div>
+            @elseif ($confirmation->status === 'not_received')
+                <div class="bg-white border rounded-2xl shadow-sm p-6">
+                    <p class="text-sm font-semibold text-gray-800 mb-4">Your decision</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                        {{-- Received --}}
+                        <form method="POST" action="{{ route('recipient.confirmations.received', $confirmation->id) }}"
+                            class="border rounded-2xl p-4 bg-green-50 border-green-200">
+                            @csrf
+                            <p class="font-semibold text-green-900 mb-2">✅ I received it</p>
+                            <textarea name="recipient_note" rows="3" class="w-full border rounded-xl px-3 py-2 text-sm"
+                                placeholder="Optional note..."></textarea>
+
+                            <button type="submit" onclick="return confirm('Confirm you received the donation?');"
+                                class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 rounded-xl">
+                                Confirm received
+                            </button>
+                        </form>
                     </div>
                 </div>
             @endif

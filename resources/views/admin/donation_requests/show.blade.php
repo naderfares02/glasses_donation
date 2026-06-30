@@ -72,12 +72,19 @@
                     </div>
 
                     <div class="flex-1">
-                        <p class="text-lg font-bold text-gray-800">
 
-                            <a href="{{ route('admin.glasses.show', $donationRequest->glasses->id) }}">
-                                {{ $donationRequest->glasses->title ?? 'Glasses' }}
+                        <div class="flex items-start justify-between">
+                            <p class="text-lg font-bold text-gray-800">
+                                <a href="{{ route('admin.glasses.show', $donationRequest->glasses->id) }}">
+                                    {{ $donationRequest->glasses->title ?? 'Glasses' }}
+                                </a>
+                            </p>
+
+                            <a href="{{ route('admin.receipts.show', $donationRequest->id) }}"
+                                class="px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                                View Receipt
                             </a>
-                        </p>
+                        </div>
 
 
                         <p class="text-sm text-gray-600 mt-1">
@@ -86,9 +93,12 @@
                         </p>
 
                         <div class="mt-3 text-sm text-gray-700">
-                            <p><span class="font-semibold">Donor:</span> {{ $donationRequest->donor->name ?? '—' }}</p>
+                            <p><span class="font-semibold">Donor:</span> <a
+                                    href="{{ route('admin.users.show', $donationRequest->donor->id) }}">{{ $donationRequest->donor->name ?? '—' }}
+                                </a> </p>
                             <p><span class="font-semibold">Recipient:</span>
-                                {{ $donationRequest->recipient->name ?? '—' }}</p>
+                                <a href="{{ route('admin.users.show', $donationRequest->recipient->id) }}"> {{ $donationRequest->recipient->name ?? '—' }}</a></
+                            p>
                         </div>
 
                         @if($donationRequest->donor_note)
@@ -130,25 +140,25 @@
                                 </p>
 
                             @else
-                                <p class="text-sm font-semibold
-                                                                                @if($confirmation->status === 'received')
-                                                                                    text-green-800
-                                                                                @else
-                                                                                    text-red-800
-                                                                                @endif
-                                                                            ">
+                                <p
+                                    class="text-sm font-semibold
+                                                                                                                                                                                    @if($confirmation->status === 'received')
+                                                                                                                                                                                        text-green-800
+                                                                                                                                                                                    @else
+                                                                                                                                                                                        text-red-800
+                                                                                                                                                                                    @endif
+                                                                                                                                                                                ">
                                     {{ $confirmation->status === 'received' ? 'Confirmed by recipient' : 'Delivery denied by recipient' }}
                                 </p>
 
                                 @if($confirmation->recipient_note)
-                                    <p
-                                        class="text-sm mt-2
-                                                                                                                                                    @if($confirmation->status === 'received')
-                                                                                                                                                        text-green-900
-                                                                                                                                                    @else
-                                                                                                                                                        text-red-900
-                                                                                                                                                    @endif
-                                                                                                                                                ">
+                                    <p class="text-sm mt-2
+                                                                                                                        @if($confirmation->status === 'received')
+                                                                                                                            text-green-900
+                                                                                                                        @else
+                                                                                                                            text-red-900
+                                                                                                                        @endif
+                                                                                                                    ">
                                         <span>Recipient note: </span> <span class="font-bold">
                                             {{ $confirmation->recipient_note }} </span>
                                     </p>
@@ -177,50 +187,60 @@
                         This request is already approved.
                     </div>
 
-                @else
-                    {{-- APPROVE (مسموح حتى لو كانت Rejected) --}}
-                    <form method="POST" action="{{ route('admin.donation_requests.approve', $donationRequest->id) }}"
-                        class="flex flex-col md:flex-row gap-3 md:items-end">
-                        @csrf
-                        <div class="flex-1">
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                Admin note
-                                ({{ $donationRequest->status === 'rejected' ? 'required to approve after rejection' : 'optional' }})
-                            </label>
-
-                            <textarea name="admin_note" rows="3" @if($donationRequest->status === 'rejected') required @endif
-                                class="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-200"
-                                placeholder="{{ $donationRequest->status === 'rejected' ? 'Explain why you are approving now...' : 'Notes for record...' }}"></textarea>
-                        </div>
-
-                        <button type="submit" onclick="return confirm('Approve this donation request?');"
-                            class="px-5 py-3 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white">
-                            Approve
-                        </button>
-                    </form>
-
-                    {{-- REJECT (لو Pending فقط، أو حتى لو تريد تسمح بإعادة الرفض) --}}
-                    <div class="mt-4 border-t pt-4">
-                        <form method="POST" action="{{ route('admin.donation_requests.reject', $donationRequest->id) }}"
-                            class="flex flex-col md:flex-row gap-3 md:items-end">
-                            @csrf
-
-                            <div class="flex-1">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                    Rejection reason (required)
-                                </label>
-                                <textarea name="admin_note" rows="3" required
-                                    class="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-200"
-                                    placeholder="Why rejected? (required)"></textarea>
-                            </div>
-
-                            <button type="submit" onclick="return confirm('Reject this donation request?');"
-                                class="px-5 py-3 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white">
-                                Reject
-                            </button>
-                        </form>
+                @elseif ($donationRequest->status === 'rejected')
+                    <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">
+                        This request is already rejected.
+                    </div>
+                @elseif ($donationRequest->status === 'pending')
+                    <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+                        No decision has been made yet.
                     </div>
                 @endif
+
+                {{-- APPROVE (مسموح حتى لو كانت Rejected) --}}
+                <form method="POST" action="{{ route('admin.donation_requests.approve', $donationRequest->id) }}"
+                    class="flex flex-col md:flex-row gap-3 md:items-end">
+                    @csrf
+                    <div class="flex-1 mt-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Admin note
+                            ({{ $donationRequest->status === 'rejected' ? 'required to approve after rejection' : 'optional' }})
+                        </label>
+
+                        <textarea name="admin_note" rows="3" @if($donationRequest->status === 'rejected') required @endif
+                            class="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-200"
+                            placeholder="{{ $donationRequest->status === 'rejected' ? 'Explain why you are approving now...' : 'Notes for record...' }}"></textarea>
+                    </div>
+
+                    <button type="submit" onclick="return confirm('Approve this donation request?');"
+                        class="px-5 py-3 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white">
+                        Approve
+                    </button>
+                </form>
+
+                {{-- REJECT (لو Pending فقط، أو حتى لو تريد تسمح بإعادة الرفض) --}}
+                <div class="mt-4 border-t pt-4">
+                    <form method="POST" action="{{ route('admin.donation_requests.reject', $donationRequest->id) }}"
+                        class="flex flex-col md:flex-row gap-3 md:items-end">
+                        @csrf
+
+                        <div class="flex-1">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Rejection reason
+                                ({{ $donationRequest->status === 'approved' ? 'required to rejection after approve' : 'optional' }})
+                            </label>
+                            <textarea name="admin_note" rows="3" required
+                                class="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-200"
+                                placeholder="Why rejected? (required)"></textarea>
+                        </div>
+
+                        <button type="submit" onclick="return confirm('Reject this donation request?');"
+                            class="px-5 py-3 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white">
+                            Reject
+                        </button>
+                    </form>
+                </div>
+
             </div>
 
         </div>

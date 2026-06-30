@@ -26,7 +26,7 @@
 
                     <button wire:click="setActive({{ $c->id }})"
                         class="w-full text-left p-4 border-b hover:bg-gray-50 transition
-                                                                                   {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
+                                                                                                                                                               {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
                         <div class="flex gap-3">
                             {{-- Avatar --}}
                             <div
@@ -72,7 +72,8 @@
         {{-- =========================
         Chat Window
         ========================== --}}
-        <section class="lg:col-span-2 flex flex-col">
+        <section class="lg:col-span-2 flex flex-col" x-data="{ openDonate:false, openReport:false, openActions:false }"
+            @keydown.escape.window="openDonate=false; openReport=false; openActions=false">
             @if($active)
                     @php
                         $other = auth()->id() === $active->donor_id ? $active->recipient : $active->donor;
@@ -96,79 +97,76 @@
                         </div>
 
                         {{-- Right side actions --}}
-                        <div x-data="{ openDonate:false, openReport:false, openActions:false }"
-                            class="flex items-center gap-2 shrink-0"
-                            @keydown.escape.window="openDonate=false; openReport=false; openActions=false">
+                        <div class="flex items-center gap-2 shrink-0">
 
                             {{-- Status badge --}}
                             <span class="text-xs font-semibold px-3 py-1 rounded-full border
-                                                                                                                                            {{ $active->status === 'open'
+                                                                                                                                                                                                                                                                                                    {{ $active->status === 'open'
                 ? 'bg-green-50 text-green-700 border-green-200'
                 : 'bg-gray-100 text-gray-700 border-gray-200' }}">
                                 {{ strtoupper($active->status) }}
                             </span>
 
-                            {{-- ✅ Report / Complaint (للجميع donor + recipient) --}}
+
+
+                            {{-- Actions dropdown (Report + Disconnect) --}}
                             @php
                                 $myComplaint = \App\Models\Complaint::where('conversation_id', $active->id)
                                     ->where('reporter_id', auth()->id())
                                     ->first();
                             @endphp
 
-                            @if($myComplaint)
-                                {{-- يوجد شكوى بالفعل --}}
-                                <a href="{{ route('complaints.show', $myComplaint->id) }}"
-                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-red-50 hover:bg-red-100 text-xs font-semibold text-red-700">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M9 12h6m-6 4h6M9 8h6M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H7l-4 4V6a2 2 0 012-2z" />
-                                    </svg>
-                                    View Report
-                                </a>
-                            @else
-                                {{-- لا يوجد شكوى --}}
-                                <button type="button" @click="openReport = true"
+                            <div class="relative" x-data="{ openActions: false }">
+                                <button type="button" @click="openActions = !openActions"
                                     class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white hover:bg-gray-50 text-xs font-semibold text-gray-800">
-                                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 9v4m0 4h.01M5 21h14a2 2 0 001.732-3L13.732 4a2 2 0 00-3.464 0L3.268 18A2 2 0 005 21z" />
+                                    Actions
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                            clip-rule="evenodd" />
                                     </svg>
-                                    Report
                                 </button>
-                            @endif
 
-                            {{-- Donor actions dropdown --}}
-                            @if(auth()->user()->role === 'donor' && $active->status === 'open')
-                                <div class="relative">
-                                    <button type="button" @click="openActions=!openActions"
-                                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-white hover:bg-gray-50 text-xs font-semibold text-gray-800">
-                                        Actions
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
+                                <div x-cloak x-show="openActions" @click.outside="openActions = false" x-transition
+                                    class="absolute right-0 mt-2 w-52 bg-white border rounded-2xl shadow-lg overflow-hidden z-50">
 
-                                    <div x-cloak x-show="openActions" @click.outside="openActions=false" x-transition
-                                        class="absolute right-0 mt-2 w-56 bg-white border rounded-2xl shadow-lg overflow-hidden z-50">
-                                        <button type="button" @click="openActions=false; openDonate=true"
-                                            class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50">
-                                            Mark as Donated
+                                    @if($myComplaint)
+                                        <a href="{{ route('complaints.show', $myComplaint->id) }}"
+                                            class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-700 hover:bg-red-50">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M9 12h6m-6 4h6M9 8h6M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H7l-4 4V6a2 2 0 012-2z" />
+                                            </svg>
+                                            View Report
+                                        </a>
+                                    @else
+                                        <button type="button" @click="openActions = false; openReport = true"
+                                            class="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-gray-50">
+                                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M12 9v4m0 4h.01M5 21h14a2 2 0 001.732-3L13.732 4a2 2 0 00-3.464 0L3.268 18A2 2 0 005 21z" />
+                                            </svg>
+                                            Report
                                         </button>
+                                    @endif
 
-                                        <form method="POST" action="{{ route('donor.conversations.disconnect', $active->id) }}"
-                                            onsubmit="return confirm('Disconnect and make this glasses available again?');">
-                                            @csrf
-                                            <button type="submit"
-                                                class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
-                                                Disconnect
-                                            </button>
-                                        </form>
-                                    </div>
+                                    <form method="POST" action="{{ route('donor.conversations.disconnect', $active->id) }}"
+                                        onsubmit="return confirm('Disconnect and make this glasses available again?');">
+                                        @csrf
+                                        <button type="submit"
+                                            class="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M18.36 5.64a9 9 0 11-12.73 0M12 3v9" />
+                                            </svg>
+                                            Disconnect
+                                        </button>
+                                    </form>
                                 </div>
-                            @endif
+                            </div>
 
                             {{-- =========================
                             ✅ Complaint Modal
@@ -243,66 +241,7 @@
                                 </div>
                             </div>
 
-                            {{-- =========================
-                            Donor Donate Modal
-                            ========================== --}}
-                            @if(auth()->user()->role === 'donor' && $active->status === 'open')
-                                <div x-cloak x-show="openDonate" x-transition
-                                    class="fixed inset-0 z-50 flex items-center justify-center px-4">
-                                    <div class="absolute inset-0 bg-black/40" @click="openDonate=false"></div>
 
-                                    <div class="relative bg-white w-full max-w-lg rounded-2xl shadow-xl p-6">
-                                        <div class="flex items-start justify-between">
-                                            <div>
-                                                <p class="text-lg font-bold text-gray-800">Request donation confirmation</p>
-                                                <p class="text-sm text-gray-600 mt-1">
-                                                    This will send a request to admin for review. Glasses will become
-                                                    <b>Pending</b>.
-                                                </p>
-                                            </div>
-                                            <button type="button" class="p-2 hover:bg-gray-100 rounded-xl"
-                                                @click="openDonate=false">✕</button>
-                                        </div>
-
-                                        <form method="POST" action="{{ route('donor.glasses.mark_donated', $active->glasses_id) }}"
-                                            class="mt-5">
-                                            @csrf
-                                            <input type="hidden" name="conversation_id" value="{{ $active->id }}">
-
-                                            <div class="space-y-4">
-                                                <div>
-                                                    <label class="block text-sm font-semibold text-gray-700 mb-1">
-                                                        Delivered date (optional)
-                                                    </label>
-                                                    <input type="date" name="delivered_date"
-                                                        class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200">
-                                                </div>
-
-                                                <div>
-                                                    <label class="block text-sm font-semibold text-gray-700 mb-1">
-                                                        Note for admin (optional)
-                                                    </label>
-                                                    <textarea name="donor_note" rows="4"
-                                                        class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
-                                                        placeholder="Any details that help the admin verify the donation..."></textarea>
-                                                </div>
-                                            </div>
-
-                                            <div class="mt-6 flex items-center justify-end gap-3">
-                                                <button type="button" @click="openDonate=false"
-                                                    class="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200">
-                                                    Cancel
-                                                </button>
-
-                                                <button type="submit"
-                                                    class="px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white">
-                                                    Send to Admin
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            @endif
 
                         </div>
                     </div>
@@ -313,8 +252,19 @@
                             @php $mine = $m->sender_id === auth()->id(); @endphp
 
                             <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
-                                <div
-                                    class="max-w-[75%] rounded-2xl px-4 py-3 {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
+
+                                @php
+                                    $role = auth()->user()->role ?? null;
+
+                                    $myColor = match ($role) {
+                                        'recipient' => 'bg-emerald-600 text-white',
+                                        'donor' => 'bg-blue-600 text-white',
+                                        'admin', 'super_admin' => 'bg-gray-900 text-white',
+                                        default => 'bg-gray-600 text-white',
+                                    };
+                                @endphp
+
+                                <div class="max-w-[75%] rounded-2xl px-4 py-3 {{ $mine ? $myColor : 'bg-gray-100 text-gray-800' }}">
                                     <p class="text-sm whitespace-pre-line">{{ $m->body }}</p>
                                     <p class="text-[11px] mt-2 opacity-75">
                                         {{ $m->created_at->format('Y-m-d H:i') }}
@@ -325,6 +275,77 @@
                             <div class="text-center text-gray-500 text-sm py-10">No messages yet.</div>
                         @endforelse
                     </div>
+
+                    @if($active->status === 'open')
+                        {{-- Mark as Donated --}}
+                        <div class="px-5 py-3 border-t bg-white">
+                            <button type="button" @click="openActions=false; openDonate=true;"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition">
+                                ✅ Mark as Delivered
+                            </button>
+                        </div>
+                    @endif
+
+                    {{-- =========================
+                    Donor Donate Modal
+                    ========================== --}}
+                    @if(auth()->user()->role === 'donor' && $active->status === 'open')
+                        <div x-cloak x-show="openDonate" x-transition
+                            class="fixed inset-0 z-50 flex items-center justify-center px-4">
+                            <div class="absolute inset-0 bg-black/40" @click="openDonate=false"></div>
+
+                            <div class="relative bg-white w-full max-w-lg rounded-2xl shadow-xl p-6">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-lg font-bold text-gray-800">Request donation confirmation</p>
+                                        <p class="text-sm text-gray-600 mt-1">
+                                            This will send a request to admin for review. Glasses will become
+                                            <b>Pending</b>.
+                                        </p>
+                                    </div>
+                                    <button type="button" class="p-2 hover:bg-gray-100 rounded-xl"
+                                        @click="openDonate=false">✕</button>
+                                </div>
+
+                                <form method="POST" action="{{ route('donor.glasses.mark_donated', $active->glasses_id) }}"
+                                    class="mt-5">
+                                    @csrf
+                                    <input type="hidden" name="conversation_id" value="{{ $active->id }}">
+
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">
+                                                Delivered date (optional)
+                                            </label>
+                                            <input type="date" name="delivered_date"
+                                                class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200">
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">
+                                                Note for admin (optional)
+                                            </label>
+                                            <textarea name="donor_note" rows="4"
+                                                class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
+                                                placeholder="Any details that help the admin verify the donation..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-6 flex items-center justify-end gap-3">
+                                        <button type="button" @click="openDonate=false"
+                                            class="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200">
+                                            Cancel
+                                        </button>
+
+                                        <button type="submit"
+                                            class="px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white">
+                                            Send to Admin
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- Send box --}}
                     <div class="p-4 border-t bg-gray-50">

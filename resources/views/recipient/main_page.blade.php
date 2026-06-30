@@ -154,10 +154,10 @@
                                 </div>
 
                                 <div class="absolute bottom-3 right-3">
-                                    <span
+                                    {{-- <span
                                         class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/90 border text-xs font-semibold text-gray-800">
                                         View →
-                                    </span>
+                                    </span> --}}
                                 </div>
                             </div>
 

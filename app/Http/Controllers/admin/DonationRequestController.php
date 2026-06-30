@@ -99,7 +99,7 @@ public function approve(Request $request, DonationRequest $donationRequest)
             'donor_id'            => $donationRequest->donor_id,
             'recipient_id'        => $donationRequest->recipient_id,
             'approved_by'         => auth()->id(),
-            'delivered_date'      => $data['delivered_date'] ?? null,
+            'delivered_date'      => $donationRequest->delivered_date,
             'admin_note'          => $data['admin_note'] ?? null,
             'receipt_code'        => 'RCPT-' . strtoupper(Str::random(10)),
             'issued_at'           => now(),

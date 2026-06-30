@@ -307,7 +307,7 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Pickup City / Area</label>
                             <input name="pickup_city" value="{{ old('pickup_city') }}"
-                                placeholder="Example: Gaza / Nablus..."
+                                placeholder="Example: Dortmund/stuttgart ..."
                                 class="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-200">
                         </div>
 

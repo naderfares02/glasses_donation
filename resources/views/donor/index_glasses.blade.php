@@ -162,7 +162,8 @@
                                             <div class="min-w-0">
                                                 <p class="text-base font-extrabold text-gray-900 truncate">{{ $item->title }}
                                                 </p>
-                                                <p class="text-xs text-gray-500 mt-1">#{{ $item->id }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">
+                                                    Reference: {{ $item->serial_number }}</p>
                                             </div>
 
                                             <span

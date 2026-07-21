@@ -10,37 +10,86 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $glasses = Glasses::with('primaryImage')
-            ->where('status', 'available')
-            ->latest()
-            ->paginate(12);
-
-         $q = trim((string) $request->query('q', ''));
+        $q = trim((string) $request->query('q', ''));
         $condition = $request->query('condition', '');
         $lensType  = $request->query('lens_type', '');
 
         $glasses = Glasses::query()
-            ->with('primaryImage')
+            ->with([
+                'primaryImage',
+                'user'
+            ])
             ->where('status', 'available');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        | Search by:
+        | - Glasses title
+        | - Reference number
+        | - Brand
+        |--------------------------------------------------------------------------
+        */
+
         if ($q !== '') {
-            $glasses->where(function ($x) use ($q) {
-                $x->where('title', 'like', "%{$q}%")
-                ->orWhere('lens_type', 'like', "%{$q}%")
-                ->orWhere('prescription', 'like', "%{$q}%");
+
+    $glasses->where(function ($query) use ($q) {
+
+        $query->where('title', 'like', "%{$q}%")
+            ->orWhere('serial_number', 'like', "%{$q}%")
+            ->orWhere('brand', 'like', "%{$q}%")
+            ->orWhereHas('user', function ($userQuery) use ($q) {
+                $userQuery->where('name', 'like', "%{$q}%");
             });
+
+    });
+
+}
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Condition Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $condition !== '' &&
+            in_array($condition, ['new', 'used'], true)
+        ) {
+
+            $glasses->where('condition', $condition);
+
         }
 
-        if ($condition !== '' && in_array($condition, ['new', 'used'], true)) {
-            $glasses->where('condition', $condition);
-        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Lens Type Filter
+        |--------------------------------------------------------------------------
+        */
 
         if ($lensType !== '') {
+
             $glasses->where('lens_type', $lensType);
+
         }
 
-        $glasses = $glasses->latest()->paginate(16)->withQueryString();
-        
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $glasses = $glasses
+            ->latest()
+            ->paginate(16)
+            ->withQueryString();
+
+
         return view('recipient.main_page', compact('glasses'));
     }
 }

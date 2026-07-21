@@ -17,7 +17,8 @@ class Glasses extends Model
      */
     protected $fillable = [
         'user_id',
-
+        'serial_number',
+        
         // Basic
         'title',
         'description',

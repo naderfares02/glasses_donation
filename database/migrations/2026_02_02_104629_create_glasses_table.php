@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->enum('condition', ['new','used']);
             $table->enum('status', ['available','in_contact','donated'])->default('available');
+            $table->string('serial_number')->nullable()->unique();
 
              $table->string('brand')->nullable();
             $table->string('lens_type')->nullable(); // single_vision, bifocal...

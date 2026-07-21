@@ -124,33 +124,58 @@
 
                     {{-- Hero card --}}
                     <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
+
                         <div class="p-6 border-b bg-gray-50">
-                            <div class="flex items-start justify-between gap-4">
+
+                            <div class="flex items-start justify-between gap-6">
+
                                 <div class="min-w-0">
-                                    <div class="flex items-start gap-3 flex-wrap">
-                                        <h1 class="text-2xl font-extrabold text-gray-900 leading-snug break-words">
-                                            {{ $glasses->title }}
-                                        </h1>
 
-                                        <span
-                                            class="inline-flex items-center px-3 py-1 rounded-full border text-xs font-semibold {{ $statusBadge }}">
-                                            {{ strtoupper(str_replace('_', ' ', $status)) }}
-                                        </span>
+                                    <h1 class="text-2xl font-extrabold text-gray-900 leading-snug break-words">
+                                        {{ $glasses->title }}
+                                    </h1>
 
-                                        <span
-                                            class="inline-flex items-center px-3 py-1 rounded-full border text-xs font-semibold {{ $conditionBadge }}">
-                                            {{ strtoupper($glasses->condition) }}
+                                    <p class="text-sm text-gray-600 mt-2">
+                                        Donated by:
+                                        <span class="font-semibold text-gray-800">
+                                            {{ $glasses->user->name }}
                                         </span>
-                                    </div>
+                                    </p>
 
                                     <p class="text-sm text-gray-500 mt-2">
                                         Added:
                                         <span class="font-semibold text-gray-700">
                                             {{ $glasses->created_at?->format('Y-m-d') ?? '—' }}
                                         </span>
+
+                                        <span class="mx-2 text-gray-300">•</span>
+
+                                        Reference:
+                                        <span class="font-semibold text-gray-700">
+                                            {{ $glasses->serial_number }}
+                                        </span>
                                     </p>
+
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Condition:
+                                        <span class="font-semibold text-gray-700">
+                                            {{ strtoupper($glasses->condition) }}
+                                        </span>
+                                    </p>
+
                                 </div>
+
+
+                                {{-- System Status --}}
+                                <div class="shrink-0">
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full border text-xs font-semibold {{ $statusBadge }}">
+                                        {{ strtoupper(str_replace('_', ' ', $status)) }}
+                                    </span>
+                                </div>
+
                             </div>
+
                         </div>
 
                         {{-- Images --}}

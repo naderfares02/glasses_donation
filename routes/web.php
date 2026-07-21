@@ -128,8 +128,11 @@ Route::middleware(['auth', 'verified', 'role:recipient', 'active', 'phone.verifi
         Route::get('/glasses/{glasses}', [RecipientGlassesController::class, 'show'])
             ->name('glasses.show');
 
-        Route::post('/glasses/{glasses}/contact-requests', [RecipientContactRequestController::class, 'store'])
+        Route::post('/glasses/{glasses}/contact-request', [RecipientContactRequestController::class, 'store'])
             ->name('contact-requests.store');
+
+        Route::get('/contact-requests', [RecipientContactRequestController::class, 'index'])
+            ->name('contact-requests.index');
 
         Route::get('/conversations/{conversation}', [\App\Http\Controllers\ConversationController::class, 'show'])
             ->name('conversations.show');
@@ -163,6 +166,11 @@ Route::middleware(['auth', 'verified', 'role:recipient', 'active', 'phone.verifi
 
         Route::post('/delivery-confirmations/{confirmation}/not-received', [RecipientDonationsController::class, 'markNotReceived'])
             ->name('confirmations.not_received');
+
+        Route::patch(
+        '/recipient/requests/{request}/withdraw',
+        [RecipientContactRequestController::class, 'withdraw']
+        )->name('requests.withdraw');
 
     });
 
@@ -313,11 +321,9 @@ Route::get('/suspended', function () {
 | complaint Routes
 |--------------------------------------------------------------------------
 */
-Route::post('/conversations/{conversation}/complaints', [ComplaintController::class, 'store'])
-    ->name('complaints.store');
-
-Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('complaints.show');
-Route::post('/complaints/{complaint}/message', [ComplaintController::class, 'message'])->name('complaints.message');
+Route::post('/conversations/{conversation}/complaints', [ComplaintController::class, 'store'])->middleware('auth')->name('complaints.store');
+Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->middleware('auth')->name('complaints.show');
+Route::post('/complaints/{complaint}/message', [ComplaintController::class, 'message'])->middleware('auth')->name('complaints.message');
 Route::post('/complaints/{complaint}/close', [ComplaintController::class, 'close'])->name('complaints.close');
 
 /*

@@ -158,9 +158,13 @@ $lockedConversation->glasses()
                 ->get()
             : collect();
 
-        $existingComplaint = \App\Models\Complaint::where('conversation_id', $active->id)
+        $existingComplaint = null;
+
+if ($active) {
+    $existingComplaint = \App\Models\Complaint::where('conversation_id', $active->id)
         ->where('reporter_id', auth()->id())
         ->first();
+}
 
         return view('components.chats.inbox', compact('conversations', 'active', 'messages','existingComplaint'));
     }

@@ -26,7 +26,7 @@
 
                     <button wire:click="setActive({{ $c->id }})"
                         class="w-full text-left p-4 border-b hover:bg-gray-50 transition
-                                                                                                                                                               {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
+                                                                                                                                                                                       {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
                         <div class="flex gap-3">
                             {{-- Avatar --}}
                             <div
@@ -101,7 +101,7 @@
 
                             {{-- Status badge --}}
                             <span class="text-xs font-semibold px-3 py-1 rounded-full border
-                                                                                                                                                                                                                                                                                                    {{ $active->status === 'open'
+                                                                                                                                                                                                                                                                                                                                                    {{ $active->status === 'open'
                 ? 'bg-green-50 text-green-700 border-green-200'
                 : 'bg-gray-100 text-gray-700 border-gray-200' }}">
                                 {{ strtoupper($active->status) }}
@@ -151,20 +151,22 @@
                                             Report
                                         </button>
                                     @endif
+                                    @if (auth()->user()->role === 'donor')
+                                        <form method="POST" action="{{ route('donor.conversations.disconnect', $active->id) }}"
+                                            onsubmit="return confirm('Disconnect and make this glasses available again?');">
+                                            @csrf
+                                            <button type="submit"
+                                                class="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M18.36 5.64a9 9 0 11-12.73 0M12 3v9" />
+                                                </svg>
+                                                Disconnect
+                                            </button>
+                                        </form>
+                                    @endif
 
-                                    <form method="POST" action="{{ route('donor.conversations.disconnect', $active->id) }}"
-                                        onsubmit="return confirm('Disconnect and make this glasses available again?');">
-                                        @csrf
-                                        <button type="submit"
-                                            class="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M18.36 5.64a9 9 0 11-12.73 0M12 3v9" />
-                                            </svg>
-                                            Disconnect
-                                        </button>
-                                    </form>
                                 </div>
                             </div>
 
@@ -276,7 +278,7 @@
                         @endforelse
                     </div>
 
-                    @if($active->status === 'open')
+                    @if($active->status === 'open' && auth()->user()->role === 'donor')
                         {{-- Mark as Donated --}}
                         <div class="px-5 py-3 border-t bg-white">
                             <button type="button" @click="openActions=false; openDonate=true;"
@@ -315,7 +317,7 @@
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block text-sm font-semibold text-gray-700 mb-1">
-                                                Delivered date (optional)
+                                                Delivered date
                                             </label>
                                             <input type="date" name="delivered_date"
                                                 class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200">
@@ -355,17 +357,17 @@
                                     class="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-200"
                                     placeholder="Write a message..."></textarea>
 
-                                @if (auth()->user()->role === 'recipient')
-                                    <button type="submit"
-                                        class="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 rounded-xl">
-                                        Send
-                                @else
-                                        <button type="submit"
-                                            class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
-                                            Send
-                                    @endif
-
-                                    </button>
+@if (auth()->user()->role === 'recipient')
+    <button type="submit"
+        class="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 rounded-xl">
+        Send
+    </button>
+@else
+    <button type="submit"
+        class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
+        Send
+    </button>
+@endif
                             </form>
 
                             {{-- Clear input event (اختياري إنك تستخدمه بالـ Livewire emit) --}}

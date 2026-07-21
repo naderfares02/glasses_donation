@@ -11,6 +11,10 @@ class ChatController extends Controller
     $userId = auth()->id();
     $role = auth()->user()->role;
 
+    // $data = $request->validate([
+    //     'delivered_date' => ['required']
+    // ]);
+
     $query = Conversation::query()
         ->with([
             'glasses.primaryImage',

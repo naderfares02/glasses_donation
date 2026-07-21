@@ -73,20 +73,48 @@ class ProfileController extends Controller
 
     $user = $request->user();
 
-    // ✅ احذف القديمة
-    if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-        Storage::disk('public')->delete($user->avatar);
-    }
-
-    // ✅ خزّن الصورة المقصوصة (base64)
+    // ✅ خزّن الصورة المقصوصة (base64) أولاً، قبل حذف القديمة
+    // (لو فشل الحفظ، ما نكون خسرنا الصورة القديمة بلا داعي)
     $data = $request->input('cropped_avatar');
 
     // remove prefix: data:image/jpeg;base64,...
     $data = preg_replace('#^data:image/\w+;base64,#i', '', $data);
     $data = str_replace(' ', '+', $data);
 
-    $fileName = 'avatars/' . uniqid('avatar_', true) . '.jpg';
-    Storage::disk('public')->put($fileName, base64_decode($data));
+    $decoded = base64_decode($data, strict: true);
+
+    if ($decoded === false || strlen($decoded) < 100) {
+        // strict mode بيرجع false لو فيه أحرف غير صالحة بالـ base64
+        // وفحص الحجم بيلقط الحالات اللي بترجع string فاضي أو تالف
+        \Log::warning('Avatar upload failed: invalid base64 data', ['user_id' => $user->id]);
+        return back()->with('error', 'Failed to process the image. Please try a different photo.');
+    }
+
+    try {
+        $fileName = 'avatars/' . uniqid('avatar_', true) . '.jpg';
+        Storage::disk('public')->put($fileName, $decoded);
+
+        // ✅ تأكد إنه الملف فعلاً انكتب قبل ما نحذف القديم أو نحدّث الـ DB
+        if (!Storage::disk('public')->exists($fileName)) {
+            throw new \RuntimeException('File write verification failed.');
+        }
+    } catch (\Throwable $e) {
+        \Log::error('Avatar upload failed', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage(),
+        ]);
+        return back()->with('error', 'Something went wrong while saving your photo. Please try again.');
+    }
+
+    // ✅ الحفظ الجديد نجح فعلياً، هلق نأمّن نحذف القديمة
+    if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+        try {
+            Storage::disk('public')->delete($user->avatar);
+        } catch (\Throwable $e) {
+            // مو حرج: الصورة الجديدة موجودة أصلاً، بس نسجل الفشل بحذف القديمة
+            \Log::warning('Failed to delete old avatar', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+    }
 
     $user->update(['avatar' => $fileName]);
 
@@ -98,7 +126,12 @@ public function destroyAvatar(Request $request)
     $user = $request->user();
 
     if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-        Storage::disk('public')->delete($user->avatar);
+        try {
+            Storage::disk('public')->delete($user->avatar);
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to delete avatar file', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            // نكمل حتى لو فشل حذف الملف الفعلي، لأن الأهم إزالة المرجع من الـ DB
+        }
     }
 
     $user->update(['avatar' => null]);

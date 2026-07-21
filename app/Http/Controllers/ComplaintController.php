@@ -111,7 +111,7 @@ class ComplaintController extends Controller
             $targets = User::whereIn('role', ['admin','super_admin'])->get();
         }
 
-        Notification::send($targets->unique('id'), new \App\Notifications\ComplaintMessageFromUserNotification($complaint, $msg));
+        $targets->notify($targets->unique('id'), new \App\Notifications\ComplaintMessageFromUserNotification($complaint, $msg));
 
         return back()->with('success', 'Message sent.');
     }

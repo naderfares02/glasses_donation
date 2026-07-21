@@ -125,7 +125,7 @@
                             Added: <span
                                 class="font-semibold text-gray-700">{{ $glasses->created_at?->format('Y-m-d') ?? '—' }}</span>
                             <span class="mx-2 text-gray-300">•</span>
-                            ID: <span class="font-semibold text-gray-700">#{{ $glasses->id }}</span>
+                            Reference: <span class="font-semibold text-gray-700"> {{ $glasses->serial_number }}</span>
                         </p>
                     </div>
                     @if ($glasses->status !== 'donated')

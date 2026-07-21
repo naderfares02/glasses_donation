@@ -104,9 +104,7 @@ public function reply(Request $request, Complaint $complaint)
     });
 
     // ✅ إشعار للمستخدم صاحب الشكوى
-    $complaint->reporter?->notify(
-        new \App\Notifications\ComplaintReplyFromAdminNotification($complaint, $msg)
-    );
+    $complaint->reporter?->notify( new \App\Notifications\ComplaintReplyFromAdminNotification($complaint, $msg));
 
     return back()->with('success', 'Reply sent.');
 }

@@ -10,6 +10,7 @@ use App\Notifications\DonorDonationApprovedNotification;
 use App\Notifications\DonorDonationRejectedNotification;
 use App\Models\Glasses;
 use App\Models\DonationReceipt;
+use App\Models\ContactRequest;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -92,6 +93,17 @@ public function approve(Request $request, DonationRequest $donationRequest)
             $donationRequest->glasses->update(['status' => 'donated']);
         }
 
+        
+        if ($donationRequest->glasses) {
+        $donationRequest->glasses->update(['status' => 'donated']);
+        }
+
+        ContactRequest::where('glasses_id', $donationRequest->glasses_id)
+        ->whereIn('status', ['pending', 'accepted','on_hold'])
+        ->update([
+            'status' => 'closed'
+        ]);
+
         // 3) إنشاء الإيصال في DB
         $receipt = DonationReceipt::create([
             'donation_request_id' => $donationRequest->id,
@@ -104,6 +116,7 @@ public function approve(Request $request, DonationRequest $donationRequest)
             'receipt_code'        => 'RCPT-' . strtoupper(Str::random(10)),
             'issued_at'           => now(),
         ]);
+
 
         return $receipt;
     });
@@ -123,9 +136,7 @@ public function approve(Request $request, DonationRequest $donationRequest)
 
     // (اختياري) إشعار المتبرع
     $donationRequest->loadMissing('donor');
-    if ($donationRequest->donor) {
-        $donationRequest->donor->notify(new DonorDonationApprovedNotification($donationRequest));
-    }
+    $donationRequest->donor->Notify( new DonorDonationApprovedNotification($donationRequest));
 
     return redirect()
         ->route('admin.receipts.show', $receipt->id)
@@ -152,12 +163,12 @@ public function approve(Request $request, DonationRequest $donationRequest)
 
             $confirmation = $donationRequest->deliveryConfirmation();
 
-            if ($confirmation){
-            $confirmation->update([
-                'status' => 'not_received',
-                'updated_at' => now(),
-            ]);
-        }
+        //     if ($confirmation){
+        //     $confirmation->update([
+        //         'status' => 'not_received',
+        //         'updated_at' => now(),
+        //     ]);
+        // }
 
             // ❗عند الرفض: ارجع النظارة متاحة (أو خلّيها in_contact حسب نظامك)
             $donationRequest->glasses->update([
@@ -167,10 +178,7 @@ public function approve(Request $request, DonationRequest $donationRequest)
         });
 
         $donationRequest->loadMissing('donor');
-
-        if ($donationRequest->donor) {
-            $donationRequest->donor->notify(new DonorDonationRejectedNotification($donationRequest));
-        }
+        $donationRequest->donor->Notify( new DonorDonationRejectedNotification($donationRequest));
 
         return redirect()->route('admin.donation_requests.index')
             ->with('success', 'Donation request rejected.');

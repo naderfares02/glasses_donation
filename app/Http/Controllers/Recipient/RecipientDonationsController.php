@@ -85,8 +85,7 @@ class RecipientDonationsController extends Controller
         $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
 
         // 4) أرسل إشعار
-        Notification::send($admins, new AdminRecipientConfirmedDeliveryNotification($donationRequest));
-    }
+        Notification::send($admins, new AdminRecipientConfirmedDeliveryNotification($donationRequest));}
 
     return redirect()
         ->route('recipient.donations.index', ['tab' => 'received'])

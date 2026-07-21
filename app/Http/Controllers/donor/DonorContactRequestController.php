@@ -14,6 +14,8 @@ use App\Notifications\RecipientMustConfirmDeliveryNotification;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\AdminNewDonationRequestNotification;
+use App\Notifications\ContactRequestRejectedNotification;
+use App\Notifications\ContactRequestAcceptedNotification;
 class DonorContactRequestController extends Controller
 {
     public function index(Glasses $glasses)
@@ -92,6 +94,10 @@ public function accept(ContactRequest $request)
         );
     });
 
+    $request->recipient->notify(
+        new ContactRequestAcceptedNotification($request)
+    );
+
     return back()->with('success', 'Request accepted.');
 }
 
@@ -140,6 +146,10 @@ public function reject(ContactRequest $request)
     abort_if($request->donor_id !== auth()->id(), 403);
 
     $request->update(['status' => 'rejected']);
+
+    $request->recipient->notify(
+        new ContactRequestRejectedNotification($request)
+    );
 
     return back()->with('success','Request rejected.');
 }
@@ -222,20 +232,17 @@ public function markDonated(Request $request, Glasses $glasses)
     });
 
     // ✅ إشعار للمستفيد دائمًا
-    if ($conversation->recipient) {
-        $conversation->recipient->notify(
-            new RecipientMustConfirmDeliveryNotification($confirmation)
-        );
-    }
+    $conversation->recipient->Notify( new RecipientMustConfirmDeliveryNotification($confirmation));
 
     // ✅ إشعار للأدمن فقط إذا مطلوب موافقة
     if ($requireAdminApproval) {
         $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
 
-        Notification::send(
-            $admins,
-            new AdminNewDonationRequestNotification($donationRequest)
-        );
+    Notification::send(
+        $admins,
+        new AdminNewDonationRequestNotification($donationRequest)
+    );
+    
     }
 
     return redirect()

@@ -119,9 +119,15 @@ public function index(Request $request)
 ]);
 
         // 2) إضافة بيانات النظام (لا تجعلها تأتي من الفورم)
-        $validated['user_id'] = auth()->id();
-        $validated['status'] = 'available';
+        $data['user_id'] = auth()->id();
+        $data['status'] = 'available';
 
+        $serial = 'GL-' . date('Y') . '-' . str_pad(
+            Glasses::count() + 1,
+            6,
+            '0',
+            STR_PAD_LEFT
+        );
         // 3) Create
         $glasses = Glasses::create([
     'user_id' => auth()->id(),
@@ -147,18 +153,35 @@ public function index(Request $request)
     'pickup_city' => $data['pickup_city'] ?? null,
     'contact_method' => $data['contact_method'] ?? 'chat_only',
 
-    'status' => 'available', // حسب نظامك
+    'status' => 'available', 
 ]);
 
-        if ($request->hasFile('main_image')) {
-            $path = $request->file('main_image')->store('glasses', 'public');
+$glasses->serial_number = 'GL-' . date('Y') . '-' . str_pad(
+    $glasses->id,
+    6,
+    '0',
+    STR_PAD_LEFT
+);
 
-            GlassesImage::create([
-                'glasses_id' => $glasses->id,
-                'path' => $path,
-                'is_primary' => true,
-            ]);
-        }
+$glasses->save();
+
+        try {
+    $path = $request->file('main_image')->store('glasses', 'public');
+
+    GlassesImage::create([
+        'glasses_id' => $glasses->id,
+        'path' => $path,
+        'is_primary' => true,
+    ]);
+} catch (\Throwable $e) {
+    \Log::error('Failed to upload main glasses image', [
+        'glasses_id' => $glasses->id,
+        'error' => $e->getMessage(),
+    ]);
+
+    $glasses->delete(); // ارجع تحذف السجل الناقص بدل ما يضل يتيم بدون صورة
+    return back()->withInput()->with('error', 'Image upload failed. Please try again.');
+}
 
         // حفظ الصور الإضافية (حد أقصى 3)
         if ($request->hasFile('images')) {
@@ -252,6 +275,7 @@ public function update(Request $request, Glasses $glasses)
 
         // 1) تحديث الحقول الأساسية
         $glasses->update([
+
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'condition' => $data['condition'],

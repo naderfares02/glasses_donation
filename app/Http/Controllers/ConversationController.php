@@ -80,7 +80,15 @@ public function show(Conversation $conversation)
             'body' => $data['body'],
         ]);
 
-        event(new \App\Events\MessageSent($message));
+        try {
+            event(new \App\Events\MessageSent($message));
+        } catch (\Throwable $e) {
+            // الرسالة محفوظة بالـ DB أصلاً؛ فشل البث اللحظي بس (Reverb واقع مثلاً)
+            \Log::warning('Failed to broadcast MessageSent event', [
+                'message_id' => $message->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // if ($otherUser && $otherUser->id !== auth()->id()) {
         //     $otherUser->notify(new NewMessageNotification($conversation, auth()->user()->name));

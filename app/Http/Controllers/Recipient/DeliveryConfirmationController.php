@@ -55,7 +55,7 @@ public function confirmReceived(Request $request, DeliveryConfirmation $confirma
 
     // ✅ أرسل بعد transaction
     $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
-    Notification::send($admins, new AdminRecipientConfirmedDeliveryNotification($donationRequest));
+    $admins->Notify( new AdminRecipientConfirmedDeliveryNotification($donationRequest));
 
     return back()->with('success', 'Thanks. Your response was sent to admin for review.');
 }
@@ -85,7 +85,7 @@ public function confirmReceived(Request $request, DeliveryConfirmation $confirma
     });
 
     $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
-    Notification::send($admins, new AdminRecipientConfirmedDeliveryNotification($donationRequest));
+    $admins->Notify( new AdminRecipientConfirmedDeliveryNotification($donationRequest));
 
     return back()->with('success', 'Your response was sent to admin for review.');
 }

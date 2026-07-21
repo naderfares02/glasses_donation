@@ -60,50 +60,103 @@
                         </div>
 
                         {{-- Optional filter/search UI (شكل فقط الآن) --}}
-                        <div class="w-full lg:w-[420px]">
-                            <div class="bg-white border rounded-2xl p-4 shadow-sm">
-                                <p class="text-sm font-semibold text-gray-900">Search & filter</p>
-                                <p class="text-xs text-gray-500 mt-1">Find what you need faster.</p>
+<div class="w-full lg:w-[420px]">
+    <div class="bg-white border rounded-2xl p-5 shadow-sm">
 
-                                <form method="GET" action="{{ route('recipient.main_page') }}"
-                                    class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div class="sm:col-span-2">
-                                        <input type="text" name="q" value="{{ request('q') }}"
-                                            placeholder="Search title, lens type..."
-                                            class="w-full border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-200">
-                                    </div>
+        <p class="text-sm font-semibold text-gray-900">
+            Search & filter
+        </p>
 
-                                    <select name="condition"
-                                        class="w-full border rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-200">
-                                        <option value="">All conditions</option>
-                                        <option value="new" @selected(request('condition') === 'new')>New</option>
-                                        <option value="used" @selected(request('condition') === 'used')>Used</option>
-                                    </select>
+        <p class="text-xs text-gray-500 mt-1">
+            Find glasses by name, reference, or specifications.
+        </p>
 
-                                    <select name="lens_type"
-                                        class="w-full border rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-200">
-                                        <option value="">All lens types</option>
-                                        {{-- ضع القيم الحقيقية الموجودة عندك --}}
-                                        <option value="single_vision" @selected(request('lens_type') === 'single_vision')>
-                                            Single vision</option>
-                                        <option value="progressive" @selected(request('lens_type') === 'progressive')>
-                                            Progressive</option>
-                                    </select>
+        <form method="GET" action="{{ route('recipient.main_page') }}"
+            class="mt-4 space-y-3">
 
-                                    <div class="sm:col-span-2 flex gap-2">
-                                        <button type="submit"
-                                            class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white">
-                                            Apply
-                                        </button>
+            {{-- Search --}}
+            <input type="text"
+                name="q"
+                value="{{ request('q') }}"
+                placeholder="Search by title, reference, or brand..."
+                class="w-full border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-200">
 
-                                        <a href="{{ route('recipient.main_page') }}"
-                                            class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 border text-gray-800">
-                                            Reset
-                                        </a>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                {{-- Condition --}}
+                <select name="condition"
+                    class="w-full border rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-200">
+
+                    <option value="">
+                        All conditions
+                    </option>
+
+                    <option value="new"
+                        @selected(request('condition') === 'new')>
+                        New
+                    </option>
+
+                    <option value="used"
+                        @selected(request('condition') === 'used')>
+                        Used
+                    </option>
+
+                </select>
+
+
+                {{-- Lens Type --}}
+                <select name="lens_type"
+                    class="w-full border rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-200">
+
+                    <option value="">
+                        All lens types
+                    </option>
+
+                    <option value="single_vision"
+                        @selected(request('lens_type') === 'single_vision')>
+                        Single Vision
+                    </option>
+
+                    <option value="bifocal"
+                        @selected(request('lens_type') === 'bifocal')>
+                        Bifocal
+                    </option>
+
+                    <option value="progressive"
+                        @selected(request('lens_type') === 'progressive')>
+                        Progressive
+                    </option>
+
+                    <option value="reading"
+                        @selected(request('lens_type') === 'reading')>
+                        Reading
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="flex gap-2">
+
+                <button type="submit"
+                    class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white">
+                    Search
+                </button>
+
+
+                <a href="{{ route('recipient.main_page') }}"
+                    class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 border text-gray-800">
+                    Reset
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
                         {{-- /Optional --}}
                     </div>
                 </div>

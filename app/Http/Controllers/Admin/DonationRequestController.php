@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\DonorDonationApprovedNotification;
 use App\Notifications\DonorDonationRejectedNotification;
-use App\Models\Glasses;
 use App\Models\DonationReceipt;
 use App\Models\ContactRequest;
 use Illuminate\Support\Str;
@@ -17,7 +16,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class DonationRequestController extends Controller
 {
-    public function index(Request $request,Glasses $glasses)
+    public function index(Request $request)
     {
         $q = $request->string('q')->toString();
         $status = $request->string('status')->toString();
@@ -43,7 +42,7 @@ class DonationRequestController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('admin.donation_requests.index', compact('requests','glasses'));
+        return view('admin.donation_requests.index', compact('requests'));
     }
 
     public function show(DonationRequest $donationRequest)
@@ -179,7 +178,7 @@ public function approve(Request $request, DonationRequest $donationRequest)
         });
 
         $donationRequest->loadMissing('donor');
-        $donationRequest->donor->Notify( new DonorDonationRejectedNotification($donationRequest));
+        $donationRequest->donor->notify(new DonorDonationRejectedNotification($donationRequest));
 
         return redirect()->route('admin.donation_requests.index')
             ->with('success', 'Donation request rejected.');

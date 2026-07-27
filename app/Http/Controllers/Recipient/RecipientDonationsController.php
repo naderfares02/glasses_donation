@@ -43,19 +43,15 @@ class RecipientDonationsController extends Controller
         return view('recipient.donations.index', compact('confirmations', 'tab', 'counts'));
     }
 
-    public function show(DeliveryConfirmation $confirmation,glasses $item)
-    {
-        abort_if($confirmation->recipient_id !== auth()->id(), 403);
-
-        $confirmation->load([
-            'donationRequest.glasses.primaryImage',
-            'donationRequest.donor:id,name,avatar',
-        ]);
-
-        $item->load(['primaryImage', 'images']);
-
-        return view('recipient.donations.show', compact('confirmation','item'));
-    }
+public function show(DeliveryConfirmation $confirmation)
+{
+    abort_if($confirmation->recipient_id !== auth()->id(), 403);
+    $confirmation->load([
+        'donationRequest.glasses.primaryImage',
+        'donationRequest.donor:id,name,avatar',
+    ]);
+    return view('recipient.donations.show', compact('confirmation'));
+}
 
     public function markReceived(Request $request, DeliveryConfirmation $confirmation)
 {
@@ -73,8 +69,7 @@ class RecipientDonationsController extends Controller
     $confirmation->update([
         'status' => 'received',
         'recipient_note' => $data['recipient_note'] ?? null,
-        'confirmed_at' => now(),
-        'denied_at' => null,
+        'recipient_responded_at' => now(),
     ]);
 
     // 2) جيب DonationRequest المرتبط (ضروري للإشعار)
@@ -107,8 +102,7 @@ class RecipientDonationsController extends Controller
         $confirmation->update([
             'status' => 'not_received',
             'recipient_note' => $data['recipient_note'],
-            'denied_at' => now(),
-            'confirmed_at' => null,
+            'recipient_responded_at' => now(),
         ]);
 
         // (اختياري) هنا لاحقاً: إشعار للأدمن/المتبرع أن المستفيد نفى

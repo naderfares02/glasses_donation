@@ -39,13 +39,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/notifications/{notification}', [NotificationController::class, 'open'])
         ->name('notifications.open');
 
-    Route::middleware(['auth'])->get('/notifications', [NotificationController::class, 'index'])
-        ->name('notifications.index');
-
-    Route::middleware(['auth'])->post('/notifications/{id}/read', [NotificationController::class, 'markRead'])
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])
         ->name('notifications.read');
 
-    Route::middleware(['auth'])->post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
         ->name('notifications.read_all');
 
 });
@@ -106,9 +103,9 @@ Route::middleware(['auth', 'verified', 'role:donor', 'active', 'phone.verified']
         Route::post('/conversations/{conversation}/mark-donated', [DonorContactRequestController::class, 'markDonated'])
             ->name('conversations.mark_donated');
 
-        Route::get('/donor/receipts', [DonationReceiptController::class, 'index'])->name('receipts.index');
-        Route::get('/donor/receipts/{receipt}', [DonationReceiptController::class, 'show'])->name('receipts.show');
-        Route::get('/donor/receipts/{receipt}/download', [DonationReceiptController::class, 'download'])->name('receipts.download');
+        Route::get('/receipts', [DonationReceiptController::class, 'index'])->name('receipts.index');
+        Route::get('/receipts/{receipt}', [DonationReceiptController::class, 'show'])->name('receipts.show');
+        Route::get('/receipts/{receipt}/download', [DonationReceiptController::class, 'download'])->name('receipts.download');
     });
 
 /*
@@ -143,17 +140,17 @@ Route::middleware(['auth', 'verified', 'role:recipient', 'active', 'phone.verifi
         Route::get('/chats', [\App\Http\Controllers\ChatController::class, 'index'])
             ->name('chats.index');
 
-        Route::get('/delivery-confirmations/{confirmation}',
-            [DeliveryConfirmationController::class, 'show'])
-            ->name('delivery_confirmations.show');
+        // Route::get('/delivery-confirmations/{confirmation}',
+        //     [DeliveryConfirmationController::class, 'show'])
+        //     ->name('delivery_confirmations.show');
 
-        Route::post('/delivery-confirmations/{confirmation}/confirm',
-            [DeliveryConfirmationController::class, 'confirmReceived'])
-            ->name('delivery_confirmations.confirm');
+        // Route::post('/delivery-confirmations/{confirmation}/confirm',
+        //     [DeliveryConfirmationController::class, 'confirmReceived'])
+        //     ->name('delivery_confirmations.confirm');
 
-        Route::post('/delivery-confirmations/{confirmation}/deny',
-            [DeliveryConfirmationController::class, 'denyReceived'])
-            ->name('delivery_confirmations.deny');
+        // Route::post('/delivery-confirmations/{confirmation}/deny',
+        //     [DeliveryConfirmationController::class, 'denyReceived'])
+        //     ->name('delivery_confirmations.deny');
 
         Route::get('/donations', [RecipientDonationsController::class, 'index'])
             ->name('donations.index');
@@ -168,7 +165,7 @@ Route::middleware(['auth', 'verified', 'role:recipient', 'active', 'phone.verifi
             ->name('confirmations.not_received');
 
         Route::patch(
-        '/recipient/requests/{request}/withdraw',
+        '/requests/{request}/withdraw',
         [RecipientContactRequestController::class, 'withdraw']
         )->name('requests.withdraw');
 
@@ -288,8 +285,8 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin', 'active'])
             Route::post('/complaints/{complaint}/set-status', [AdminComplaintController::class, 'setStatus'])->name('complaints.setStatus');
             Route::post('/complaints/{complaint}/close', [AdminComplaintController::class, 'close'])->name('complaints.close');
 
-            Route::get('/admin/receipts/{receipt}', [DonationReceiptController::class, 'show'])->name('receipts.show');
-            Route::get('/admin/receipts/{receipt}/download', [DonationReceiptController::class, 'download'])->name('receipts.download');
+            Route::get('/receipts/{receipt}', [DonationReceiptController::class, 'show'])->name('receipts.show');
+            Route::get('/receipts/{receipt}/download', [DonationReceiptController::class, 'download'])->name('receipts.download');
 
         });
 

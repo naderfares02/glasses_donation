@@ -232,7 +232,7 @@ public function markDonated(Request $request, Glasses $glasses)
     });
 
     // ✅ إشعار للمستفيد دائمًا
-    $conversation->recipient->Notify( new RecipientMustConfirmDeliveryNotification($confirmation));
+    $conversation->recipient->notify( new RecipientMustConfirmDeliveryNotification($confirmation));
 
     // ✅ إشعار للأدمن فقط إذا مطلوب موافقة
     if ($requireAdminApproval) {

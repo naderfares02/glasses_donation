@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Models\DonationRequest;
 use Illuminate\Support\Facades\DB;
+
 class DeliveryConfirmationController extends Controller
 {
     public function show(DeliveryConfirmation $confirmation)

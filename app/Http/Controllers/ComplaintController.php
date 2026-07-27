@@ -102,17 +102,16 @@ class ComplaintController extends Controller
         $targets = collect();
 
         if ($complaint->handled_by) {
-            // فقط الأدمن المسؤول
             $handler = User::find($complaint->handled_by);
             if ($handler) $targets->push($handler);
-
         } else {
-            // إذا لا يوجد مسؤول بعد => كل الأدمنز
-            $targets = User::whereIn('role', ['admin','super_admin'])->get();
+            $targets = User::whereIn('role', ['admin', 'super_admin'])->get();
         }
 
-        $targets->notify($targets->unique('id'), new \App\Notifications\ComplaintMessageFromUserNotification($complaint, $msg));
-
+        Notification::send(
+            $targets->unique('id'),
+            new \App\Notifications\ComplaintMessageFromUserNotification($complaint, $msg)
+        );
         return back()->with('success', 'Message sent.');
     }
 

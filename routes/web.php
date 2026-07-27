@@ -4,7 +4,7 @@ use App\Http\Controllers\Admin\AdminComplaintController;
 use App\Http\Controllers\Admin\ChatController;
 use App\Http\Controllers\Admin\DonationReceiptController;
 use App\Http\Controllers\Admin\DonationRequestController;
-use App\Http\Controllers\admin\GlassesController as AdminGlassesController;
+// use App\Http\Controllers\admin\GlassesController as AdminGlassesController;
 use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\Donor\DashboardController;
@@ -97,11 +97,11 @@ Route::middleware(['auth', 'verified', 'role:donor', 'active', 'phone.verified']
             ->name('chats.index');
 
         // (اختياري) لو ما عدت تحتاج صفحة محادثة واحدة قديمة، احذف السطرين التاليين لاحقاً
-        Route::get('/conversations/{conversation}', [\App\Http\Controllers\ConversationController::class, 'show'])
-            ->name('conversations.show');
+        // Route::get('/conversations/{conversation}', [\App\Http\Controllers\ConversationController::class, 'show'])
+        //     ->name('conversations.show');
 
-        Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ConversationController::class, 'storeMessage'])
-            ->name('conversations.messages.store');
+        // Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ConversationController::class, 'storeMessage'])
+        //     ->name('conversations.messages.store');
 
         Route::post('/conversations/{conversation}/mark-donated', [DonorContactRequestController::class, 'markDonated'])
             ->name('conversations.mark_donated');
@@ -134,11 +134,11 @@ Route::middleware(['auth', 'verified', 'role:recipient', 'active', 'phone.verifi
         Route::get('/contact-requests', [RecipientContactRequestController::class, 'index'])
             ->name('contact-requests.index');
 
-        Route::get('/conversations/{conversation}', [\App\Http\Controllers\ConversationController::class, 'show'])
-            ->name('conversations.show');
+        // Route::get('/conversations/{conversation}', [\App\Http\Controllers\ConversationController::class, 'show'])
+        //     ->name('conversations.show');
 
-        Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ConversationController::class, 'storeMessage'])
-            ->name('conversations.messages.store');
+        // Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ConversationController::class, 'storeMessage'])
+        //     ->name('conversations.messages.store');
 
         Route::get('/chats', [\App\Http\Controllers\ChatController::class, 'index'])
             ->name('chats.index');
@@ -243,10 +243,10 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin', 'active'])
             Route::post('/users/{user}/conversations/open', [\App\Http\Controllers\Admin\UserManagementController::class, 'openClosedConversations'])
                 ->name('users.open_conversations');
 
-            Route::get('/glasses', [AdminGlassesController::class, 'index'])
+            Route::get('/glasses', [ \App\Http\Controllers\Admin\GlassesController::class, 'index'])
                 ->name('glasses.index');
 
-            Route::get('/glasses/{glasses}', [AdminGlassesController::class, 'show'])
+            Route::get('/glasses/{glasses}', [ \App\Http\Controllers\Admin\GlassesController::class, 'show'])
                 ->name('glasses.show');
 
             Route::get('/legal-pages', [\App\Http\Controllers\Admin\LegalPagesController::class, 'index'])

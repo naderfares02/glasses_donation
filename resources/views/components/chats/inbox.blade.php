@@ -1,7 +1,7 @@
 {{-- resources/views/components/chats/inbox.blade.php --}}
 
 <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
-    <div class="grid grid-cols-1 lg:grid-cols-3 min-h-[650px]">
+    <div class="grid grid-cols-1 lg:grid-cols-3 h-[650px]">
 
         {{-- =========================
         Sidebar (Conversations)
@@ -24,9 +24,9 @@
                             ->count();
                     @endphp
 
-                    <button wire:click="setActive({{ $c->id }})"
+                    <button wire:click="setActive({{ $c->id }})" wire:key="conversation-{{ $c->id }}"
                         class="w-full text-left p-4 border-b hover:bg-gray-50 transition
-                                                                                                                                                                                       {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
+                                                                                                                                                                                               {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
                         <div class="flex gap-3">
                             {{-- Avatar --}}
                             <div
@@ -72,7 +72,8 @@
         {{-- =========================
         Chat Window
         ========================== --}}
-        <section class="lg:col-span-2 flex flex-col" x-data="{ openDonate:false, openReport:false, openActions:false }"
+        <section class="lg:col-span-2 flex flex-col h-full min-h-0"
+            x-data="{ openDonate:false, openReport:false, openActions:false }"
             @keydown.escape.window="openDonate=false; openReport=false; openActions=false">
             @if($active)
                     @php
@@ -101,7 +102,7 @@
 
                             {{-- Status badge --}}
                             <span class="text-xs font-semibold px-3 py-1 rounded-full border
-                                                                                                                                                                                                                                                                                                                                                    {{ $active->status === 'open'
+                                                                                                                                                                                                                                                                                                                                                                    {{ $active->status === 'open'
                 ? 'bg-green-50 text-green-700 border-green-200'
                 : 'bg-gray-100 text-gray-700 border-gray-200' }}">
                                 {{ strtoupper($active->status) }}
@@ -249,7 +250,8 @@
                     </div>
 
                     {{-- Messages --}}
-                    <div class="flex-1 p-5 overflow-y-auto space-y-3 bg-white">
+                    <div class="flex-1 min-h-0 p-5 overflow-y-auto space-y-3 bg-white" id="messages-container"
+                        wire:key="messages-box">
                         @forelse($messages as $m)
                             @php $mine = $m->sender_id === auth()->id(); @endphp
 
@@ -320,7 +322,8 @@
                                                 Delivered date
                                             </label>
                                             <input type="date" name="delivered_date"
-                                                class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200">
+                                                class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-green-200"
+                                                required>
                                         </div>
 
                                         <div>
@@ -357,27 +360,40 @@
                                     class="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-200"
                                     placeholder="Write a message..."></textarea>
 
-@if (auth()->user()->role === 'recipient')
-    <button type="submit"
-        class="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 rounded-xl">
-        Send
-    </button>
-@else
-    <button type="submit"
-        class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
-        Send
-    </button>
-@endif
+                                @if (auth()->user()->role === 'recipient')
+                                    <button type="submit"
+                                        class="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 rounded-xl">
+                                        Send
+                                    </button>
+                                @else
+                                    <button type="submit"
+                                        class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
+                                        Send
+                                    </button>
+                                @endif
                             </form>
 
-                            {{-- Clear input event (اختياري إنك تستخدمه بالـ Livewire emit) --}}
+                            {{-- Clear input + auto-scroll to bottom on new message --}}
                             <script>
+                                function scrollChatToBottom() {
+                                    const el = document.getElementById('messages-container');
+                                    if (el) el.scrollTop = el.scrollHeight;
+                                }
+
                                 document.addEventListener('livewire:init', () => {
                                     Livewire.on('clear-chat-box', () => {
                                         const el = document.querySelector('textarea[wire\\:model\\.defer="body"]');
                                         if (el) el.value = '';
                                     });
+
+                                    Livewire.hook('morph.updated', ({ el }) => {
+                                        if (el.id === 'messages-container' || el.querySelector?.('#messages-container')) {
+                                            scrollChatToBottom();
+                                        }
+                                    });
                                 });
+
+                                document.addEventListener('DOMContentLoaded', scrollChatToBottom);
                             </script>
 
                             @error('body')

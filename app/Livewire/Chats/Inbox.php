@@ -52,8 +52,16 @@ class Inbox extends Component
         );
     }
 
-     public function setActive(int $id)
+    public function setActive(int $id)
     {
+        $conversation = Conversation::findOrFail($id);
+
+        abort_if(
+            auth()->id() !== $conversation->donor_id &&
+            auth()->id() !== $conversation->recipient_id,
+            403
+        );
+
         $this->activeConversationId = $id;
 
         // علّم رسائل الطرف الآخر كمقروءة
@@ -61,7 +69,6 @@ class Inbox extends Component
             ->whereNull('read_at')
             ->where('sender_id', '!=', auth()->id())
             ->update(['read_at' => now()]);
-
     }
 
 public function send()
@@ -107,21 +114,16 @@ public function send()
             'body'            => $body,
         ]);
 
-        // ✅ إذا أول رسالة فعلية + والمرسل donor
-if ($messagesCount !== 0 && auth()->id() === $lockedConversation->donor_id && $lockedConversation->glasses_id) {
 
-    $lockedConversation->glasses()
-        ->whereIn('status', ['reserved']) // أو ['reserved','available'] إذا بدك الاثنين
-        ->update([
-            'status' => 'in_contact'
-        ]);
-}
+// ✅ إذا المرسل هو الـ donor
+        if (auth()->id() === $lockedConversation->donor_id && $lockedConversation->glasses_id) {
 
-$lockedConversation->glasses()
-        ->whereIn('status', ['reserved']) // أو ['reserved','available'] إذا بدك الاثنين
-        ->update([
-            'status' => 'in_contact'
-        ]);
+            $lockedConversation->glasses()
+                ->whereIn('status', ['reserved']) // أو ['reserved','available'] إذا بدك الاثنين
+                ->update([
+                    'status' => 'in_contact'
+                ]);
+        }
 
         return $message;
     });
@@ -148,6 +150,10 @@ $lockedConversation->glasses()
 
         $active = $this->activeConversationId
             ? Conversation::with(['glasses.primaryImage', 'donor:id,name', 'recipient:id,name'])
+                ->where(function ($q) {
+                    $q->where('donor_id', auth()->id())
+                    ->orWhere('recipient_id', auth()->id());
+                })
                 ->find($this->activeConversationId)
             : null;
 

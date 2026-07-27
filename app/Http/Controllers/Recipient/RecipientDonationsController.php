@@ -61,8 +61,8 @@ class RecipientDonationsController extends Controller
 {
     abort_if($confirmation->recipient_id !== auth()->id(), 403);
 
-    if ($confirmation->status == 'Received') {
-        return back()->with('error', 'This request is not received.');
+  if ($confirmation->status !== 'pending') {
+        return back()->with('error', 'This request has already been resolved.');
     }
 
     $data = $request->validate([

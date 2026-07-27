@@ -11,6 +11,12 @@ return new class extends Migration {
         Schema::create('delivery_confirmations', function (Blueprint $table) {
             $table->id();
 
+            // من add_donation_request_id_to_delivery_confirmations_table
+            // (donation_requests يُنشأ قبل هذا الجدول، فلا مشكلة تبعية دائرية)
+            $table->foreignId('donation_request_id')
+                ->constrained('donation_requests')
+                ->cascadeOnDelete();
+
             $table->foreignId('glasses_id')->constrained('glasses')->cascadeOnDelete();
             $table->foreignId('conversation_id')->constrained('conversations')->cascadeOnDelete();
 
@@ -28,8 +34,11 @@ return new class extends Migration {
 
             $table->timestamps();
 
-            // يمنع تكرار طلب تأكيد لنفس المحادثة (اختياري لكنه ممتاز)
+            // يمنع تكرار طلب تأكيد لنفس المحادثة
             $table->unique('conversation_id');
+
+            // يمنع تكرار تأكيد لنفس طلب التبرع
+            $table->unique('donation_request_id');
         });
     }
 

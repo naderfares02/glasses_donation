@@ -129,9 +129,11 @@ public function disconnect(Conversation $conversation)
         ]);
     }
 
-    ContactRequest::where('glasses_id', $glasses->id)
-    ->where('status', 'on_hold')
-    ->update(['status' => 'pending']);
+    if ($glasses) {
+            ContactRequest::where('glasses_id', $glasses->id)
+                ->where('status', 'on_hold')
+                ->update(['status' => 'pending']);
+        }
 
     // ✅ الأفضل: توجيه لصفحة inbox وفتح نفس المحادثة
     return redirect()

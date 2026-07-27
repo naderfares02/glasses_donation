@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('condition', ['new','used']);
-            $table->enum('status', ['available','in_contact','donated'])->default('available');
+            // القيمة النهائية بعد دمج alter_glasses_status_enum + alter_glasses_status_enum_add_pending_donation
+            $table->enum('status', ['available','in_contact','pending_donation','donated','reserved'])->default('available');
             $table->string('serial_number')->nullable()->unique();
 
              $table->string('brand')->nullable();
@@ -38,6 +39,9 @@ return new class extends Migration
             $table->string('pickup_city')->nullable();
             $table->string('contact_method')->nullable(); // chat_only/phone/both
 
+            // ملاحظة: الـ FK على هذا العمود يُضاف لاحقًا في
+            // add_active_contact_request_fk_to_glasses.php لأن جدول
+            // contact_requests لم يُنشأ بعد في هذه اللحظة (تبعية دائرية).
             $table->unsignedBigInteger('active_contact_request_id')->nullable();
 
             $table->timestamps();

@@ -18,13 +18,18 @@ return new class extends Migration
             $table->foreignId('donor_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('recipient_id')->constrained('users')->cascadeOnDelete();
 
-            $table->enum('status', ['pending','accepted','rejected','closed'])->default('pending');
+            // القيمة النهائية بعد دمج alter_status_in_contact_requests_table
+            $table->enum('status', ['pending','accepted','on_hold','rejected','closed'])->default('pending');
 
             $table->timestamp('accepted_at')->nullable();
             $table->timestamp('closed_at')->nullable();
 
             $table->timestamps();
-});
+
+            // من add_unique_pending_request_to_contact_requests
+            // يمنع تكرار pending لنفس النظارة ونفس المستفيد
+            $table->unique(['glasses_id', 'recipient_id', 'status'], 'cr_unique_glasses_recipient_status');
+        });
     }
 
     /**

@@ -101,6 +101,9 @@
                                     $condBadge = ($item->condition === 'new')
                                         ? 'bg-green-50 text-green-700 border-green-200'
                                         : 'bg-gray-50 text-gray-700 border-gray-200';
+
+                                    // Statuses that should show a "Message" CTA alongside "View"
+                                    $showsMessageCta = in_array($status, ['reserved', 'in_contact', 'pending_donation']);
                                 @endphp
 
                                 <div class="bg-white border rounded-3xl shadow-sm overflow-hidden hover:shadow-md transition">
@@ -124,9 +127,11 @@
                                                 {{ strtoupper(str_replace('_', ' ', $status)) }}
                                             </span>
                                         </div>
-                                        @if ($item->status !== 'donated')
 
-                                            {{-- Actions menu top-right --}}
+                                        @if (!in_array($status, ['donated', 'pending_donation']))
+
+
+                                            {{-- Actions menu top-right (shown for every status; content differs) --}}
                                             <div class="absolute top-3 right-3" x-data="{ open:false }"
                                                 @keydown.escape.window="open=false">
                                                 <button type="button" @click="open=!open"
@@ -139,21 +144,31 @@
                                                 <div x-cloak x-show="open" @click.outside="open=false" x-transition
                                                     class="absolute right-0 mt-2 w-44 bg-white border rounded-2xl shadow-lg overflow-hidden z-50">
 
-                                                    <div class="border-t"></div>
+                                                    @if ($status !== 'donated')
+                                                        <a href="{{ route('donor.glasses.edit', $item->id) }}"
+                                                            class="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                                                            Edit
+                                                        </a>
+                                                    @endif
 
-                                                    <form action="{{ route('donor.glasses.destroy', $item->id) }}" method="POST"
-                                                        onsubmit="return confirm('Are you sure you want to delete this item?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit"
-                                                            class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
-                                                            Delete
-                                                        </button>
-                                                    </form>
+                                                    @if ($status === 'available')
+                                                        @if ($status !== 'donated')
+                                                            <div class="border-t"></div>
+                                                        @endif
+
+                                                        <form action="{{ route('donor.glasses.destroy', $item->id) }}" method="POST"
+                                                            onsubmit="return confirm('Are you sure you want to delete this item?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit"
+                                                                class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                                                                Delete
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                 </div>
                                             </div>
                                         @endif
-
                                     </div>
 
                                     {{-- Content --}}
@@ -180,26 +195,32 @@
                                         </div>
 
                                         {{-- Quick CTA row --}}
-                                        @if ($item->status === 'donated')
+                                        @if ($status === 'donated')
                                             <div class="mt-4 grid grid-cols-1">
                                                 <a href="{{ route('donor.glasses.show', $item->id) }}"
                                                     class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold text-gray-800">
                                                     View
                                                 </a>
-
                                             </div>
-                                        @else
+                                        @elseif ($showsMessageCta)
                                             <div class="mt-4 grid grid-cols-2 gap-2">
                                                 <a href="{{ route('donor.glasses.show', $item->id) }}"
                                                     class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold text-gray-800">
                                                     View
                                                 </a>
-                                                <a href="{{ route('donor.glasses.edit', $item->id) }}"
+                                                <a href="{{ route('donor.chats.index', ['conversation' => $item->id]) }}"
                                                     class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
-                                                    Edit
+                                                    Message
                                                 </a>
                                             </div>
-
+                                        @else
+                                            {{-- available --}}
+                                            <div class="mt-4 grid grid-cols-1">
+                                                <a href="{{ route('donor.glasses.show', $item->id) }}"
+                                                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold text-gray-800">
+                                                    View
+                                                </a>
+                                            </div>
                                         @endif
                                     </div>
                                 </div>

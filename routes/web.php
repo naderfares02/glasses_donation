@@ -14,6 +14,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Recipient\DashboardController as RecipientDashboardController;
 use App\Http\Controllers\Recipient\DeliveryConfirmationController;
+use App\Http\Controllers\Donor\DonationReceiptController as DonorDonationReceiptController;
 use App\Http\Controllers\Recipient\GlassesController as RecipientGlassesController;
 use App\Http\Controllers\Recipient\RecipientContactRequestController;
 use App\Http\Controllers\Recipient\RecipientDonationsController;
@@ -103,9 +104,9 @@ Route::middleware(['auth', 'verified', 'role:donor', 'active', 'phone.verified']
         Route::post('/conversations/{conversation}/mark-donated', [DonorContactRequestController::class, 'markDonated'])
             ->name('conversations.mark_donated');
 
-        Route::get('/receipts', [DonationReceiptController::class, 'index'])->name('receipts.index');
-        Route::get('/receipts/{receipt}', [DonationReceiptController::class, 'show'])->name('receipts.show');
-        Route::get('/receipts/{receipt}/download', [DonationReceiptController::class, 'download'])->name('receipts.download');
+        Route::get('/receipts', [DonorDonationReceiptController::class, 'index'])->name('receipts.index');
+        Route::get('/receipts/{receipt}', [DonorDonationReceiptController::class, 'show'])->name('receipts.show');
+        Route::get('/receipts/{receipt}/download', [DonorDonationReceiptController::class, 'download'])->name('receipts.download');
     });
 
 /*

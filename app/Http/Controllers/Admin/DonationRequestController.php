@@ -161,7 +161,7 @@ public function approve(Request $request, DonationRequest $donationRequest)
                 'reviewed_by' => auth()->id(),
             ]);
 
-            $confirmation = $donationRequest->deliveryConfirmation();
+            $confirmation = $donationRequest->deliveryConfirmation;
 
         //     if ($confirmation){
         //     $confirmation->update([

@@ -15,15 +15,28 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('avatar')->nullable();
             $table->string('phone', 30)->nullable();
             $table->timestamp('phone_verified_at')->nullable();
             $table->string('city', 100)->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('role', ['donor', 'recipient', 'super_admin', 'admin'])->default('recipient');
-            $table->boolean('is_active')->default(true);
+
+            // من add_admin_user_management_fields_to_users_table
+            $table->enum('status', ['active', 'suspended'])->default('active');
+            $table->timestamp('suspended_at')->nullable();
+            $table->unsignedBigInteger('suspended_by')->nullable();
+            $table->string('suspended_reason', 255)->nullable();
+            $table->unsignedBigInteger('role_changed_by')->nullable();
+            $table->timestamp('role_changed_at')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('suspended_by')->references('id')->on('users')->nullOnDelete();
+            $table->foreign('role_changed_by')->references('id')->on('users')->nullOnDelete();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -47,8 +60,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };

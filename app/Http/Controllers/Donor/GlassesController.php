@@ -63,8 +63,17 @@ public function index(Request $request)
     }
 
     // ترتيب الحالات (خلّيت reserved قبل available لأنه منطقي)
+    // ملاحظة: استخدمنا CASE WHEN بدل FIELD() لأن FIELD() خاصة بـ MySQL فقط
+    // ولا تعمل على SQLite (المستخدمة في بيئة الاختبارات)
     $query->orderByRaw("
-        FIELD(status, 'pending_donation', 'in_contact', 'reserved', 'available', 'donated')
+        CASE status
+            WHEN 'pending_donation' THEN 1
+            WHEN 'in_contact' THEN 2
+            WHEN 'reserved' THEN 3
+            WHEN 'available' THEN 4
+            WHEN 'donated' THEN 5
+            ELSE 6
+        END
     ");
 
     // ترتيب داخل الحالة
@@ -90,7 +99,8 @@ public function index(Request $request)
     {
         // 1) Validation
         $data = $request->validate([
-    'main_image' => ['required','image','max:4096'],
+    // الصورة الرئيسية اختيارية: ممكن يضاف لاحقاً من صفحة التعديل
+    'main_image' => ['nullable','image','max:4096'],
     'images.*'   => ['nullable','image','max:4096'],
     'images'     => ['nullable','array','max:3'],
 
@@ -122,12 +132,6 @@ public function index(Request $request)
         $data['user_id'] = auth()->id();
         $data['status'] = 'available';
 
-        $serial = 'GL-' . date('Y') . '-' . str_pad(
-            Glasses::count() + 1,
-            6,
-            '0',
-            STR_PAD_LEFT
-        );
         // 3) Create
         $glasses = Glasses::create([
     'user_id' => auth()->id(),
@@ -165,23 +169,25 @@ $glasses->serial_number = 'GL-' . date('Y') . '-' . str_pad(
 
 $glasses->save();
 
-        try {
-    $path = $request->file('main_image')->store('glasses', 'public');
+        if ($request->hasFile('main_image')) {
+            try {
+                $path = $request->file('main_image')->store('glasses', 'public');
 
-    GlassesImage::create([
-        'glasses_id' => $glasses->id,
-        'path' => $path,
-        'is_primary' => true,
-    ]);
-} catch (\Throwable $e) {
-    \Log::error('Failed to upload main glasses image', [
-        'glasses_id' => $glasses->id,
-        'error' => $e->getMessage(),
-    ]);
+                GlassesImage::create([
+                    'glasses_id' => $glasses->id,
+                    'path' => $path,
+                    'is_primary' => true,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to upload main glasses image', [
+                    'glasses_id' => $glasses->id,
+                    'error' => $e->getMessage(),
+                ]);
 
-    $glasses->delete(); // ارجع تحذف السجل الناقص بدل ما يضل يتيم بدون صورة
-    return back()->withInput()->with('error', 'Image upload failed. Please try again.');
-}
+                $glasses->delete(); // ارجع تحذف السجل الناقص بدل ما يضل يتيم بدون صورة
+                return back()->withInput()->with('error', 'Image upload failed. Please try again.');
+            }
+        }
 
         // حفظ الصور الإضافية (حد أقصى 3)
         if ($request->hasFile('images')) {
@@ -209,10 +215,7 @@ $glasses->save();
      */
     public function show(Glasses $glasses)
 {
-    // أمان: فقط صاحب النظارة
-    if ($glasses->user_id !== auth()->id()) {
-        abort(403);
-    } 
+    $this->authorize('view', $glasses);
 
     $glasses->load(['primaryImage', 'images']);
 
@@ -223,12 +226,11 @@ $glasses->save();
     /**
      * Show the form for editing the specified resource.
      */
-   public function edit($id)
+   public function edit(Glasses $glasses)
 {
-    $glasses = Glasses::with(['images', 'primaryImage'])
-        ->where('id', $id)
-        ->where('user_id', auth()->id())
-        ->firstOrFail(); // إذا ليست له -> 404
+    $this->authorize('update', $glasses);
+
+    $glasses->load(['images', 'primaryImage']);
 
     return view('donor.edit_glass', compact('glasses'));
 }
@@ -240,15 +242,18 @@ $glasses->save();
 
 public function update(Request $request, Glasses $glasses)
 {
-    abort_if($glasses->user_id !== auth()->id(), 403);
+    $this->authorize('update', $glasses);
 
+    // ملاحظة: title/condition/lens_type بتستخدم "sometimes" عشان تحديث جزئي
+    // (partial update) من صفحة التعديل ما يفشلش لو الحقل ما اتبعتش أصلاً؛
+    // ولو اتبعت فعلاً لازم يكون صحيح ("required" لسه سارية وقتها).
     $data = $request->validate([
-        'title'       => ['required','string','max:150'],
+        'title'       => ['sometimes','required','string','max:150'],
         'description' => ['nullable','string','max:2000'],
-        'condition'   => ['required','in:new,used'],
+        'condition'   => ['sometimes','required','in:new,used'],
 
         'brand'       => ['nullable','string','max:80'],
-        'lens_type'   => ['required','in:single_vision,bifocal,progressive,reading,non_prescription,other'],
+        'lens_type'   => ['sometimes','required','in:single_vision,bifocal,progressive,reading,non_prescription,other'],
         'vision_type' => ['nullable','in:distance,near,both,unknown'],
 
         'sph'               => ['nullable','string','max:10'],
@@ -271,79 +276,98 @@ public function update(Request $request, Glasses $glasses)
         'images.*'     => ['nullable','image','max:4096'],
     ]);
 
-    DB::transaction(function () use ($request, $glasses, $data) {
+    try {
+        DB::transaction(function () use ($request, $glasses, $data) {
 
-        // 1) تحديث الحقول الأساسية
-        $glasses->update([
+            // 1) تحديث الحقول الأساسية
+            // (?? $glasses->xxx بدل ما نطلب الحقل إجباري كل مرة في تحديث جزئي)
+            $glasses->update([
 
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'condition' => $data['condition'],
+                'title' => $data['title'] ?? $glasses->title,
+                'description' => array_key_exists('description', $data) ? $data['description'] : $glasses->description,
+                'condition' => $data['condition'] ?? $glasses->condition,
 
-            'brand' => $data['brand'] ?? null,
-            'lens_type' => $data['lens_type'],
-            'vision_type' => $data['vision_type'] ?? 'unknown',
+                'brand' => array_key_exists('brand', $data) ? $data['brand'] : $glasses->brand,
+                'lens_type' => $data['lens_type'] ?? $glasses->lens_type,
+                'vision_type' => array_key_exists('vision_type', $data) ? $data['vision_type'] : $glasses->vision_type,
 
-            'sph' => $data['sph'] ?? null,
-            'cyl' => $data['cyl'] ?? null,
-            'axis' => $data['axis'] ?? null,
-            'pd' => $data['pd'] ?? null,
-            'prescription_note' => $data['prescription_note'] ?? null,
+                'sph' => array_key_exists('sph', $data) ? $data['sph'] : $glasses->sph,
+                'cyl' => array_key_exists('cyl', $data) ? $data['cyl'] : $glasses->cyl,
+                'axis' => array_key_exists('axis', $data) ? $data['axis'] : $glasses->axis,
+                'pd' => array_key_exists('pd', $data) ? $data['pd'] : $glasses->pd,
+                'prescription_note' => array_key_exists('prescription_note', $data) ? $data['prescription_note'] : $glasses->prescription_note,
 
-            'frame_size' => $data['frame_size'] ?? 'unknown',
-            'frame_color' => $data['frame_color'] ?? null,
-            'age_group' => $data['age_group'] ?? 'unknown',
-            'gender' => $data['gender'] ?? 'unknown',
+                'frame_size' => array_key_exists('frame_size', $data) ? $data['frame_size'] : $glasses->frame_size,
+                'frame_color' => array_key_exists('frame_color', $data) ? $data['frame_color'] : $glasses->frame_color,
+                'age_group' => array_key_exists('age_group', $data) ? $data['age_group'] : $glasses->age_group,
+                'gender' => array_key_exists('gender', $data) ? $data['gender'] : $glasses->gender,
 
-            'pickup_city' => $data['pickup_city'] ?? null,
-            'contact_method' => $data['contact_method'] ?? 'chat_only',
-        ]);
-
-        // 2) استبدال الصورة الرئيسية
-        if ($request->hasFile('main_image')) {
-
-            // اجلب القديمة من DB (لا تعتمد على علاقة محمّلة سابقاً)
-            $oldPrimary = $glasses->images()->where('is_primary', true)->first();
-
-            if ($oldPrimary) {
-                Storage::disk('public')->delete($oldPrimary->path);
-                $oldPrimary->delete();
-            }
-
-            // ضمان ما في أي صورة ثانية is_primary = 1
-            $glasses->images()->update(['is_primary' => false]);
-
-            $path = $request->file('main_image')->store('glasses', 'public');
-
-            $glasses->images()->create([
-                'path' => $path,
-                'is_primary' => true,
+                'pickup_city' => array_key_exists('pickup_city', $data) ? $data['pickup_city'] : $glasses->pickup_city,
+                'contact_method' => array_key_exists('contact_method', $data) ? $data['contact_method'] : $glasses->contact_method,
             ]);
-        }
 
-        // 3) استبدال الصور الإضافية بالكامل (أفضل UX في التعديل)
-        if ($request->hasFile('images')) {
+            // 2) استبدال الصورة الرئيسية
+            if ($request->hasFile('main_image')) {
 
-            // احذف كل الصور غير الرئيسية القديمة
-            $oldAdditional = $glasses->images()->where('is_primary', false)->get();
+                // اجلب القديمة من DB (لا تعتمد على علاقة محمّلة سابقاً)
+                $oldPrimary = $glasses->images()->where('is_primary', true)->first();
 
-            foreach ($oldAdditional as $img) {
-                Storage::disk('public')->delete($img->path);
-                $img->delete();
-            }
+                if ($oldPrimary) {
+                    Storage::disk('public')->delete($oldPrimary->path);
+                    $oldPrimary->delete();
+                }
 
-            // خزّن الجديدة (حد أقصى 3)
-            $uploads = array_slice($request->file('images'), 0, 3);
+                // ضمان ما في أي صورة ثانية is_primary = 1
+                $glasses->images()->update(['is_primary' => false]);
 
-            foreach ($uploads as $image) {
-                $path = $image->store('glasses', 'public');
+                $path = $request->file('main_image')->store('glasses', 'public');
+
+                if (!$path) {
+                    throw new \RuntimeException('Failed to store main glasses image.');
+                }
+
                 $glasses->images()->create([
                     'path' => $path,
-                    'is_primary' => false,
+                    'is_primary' => true,
                 ]);
             }
-        }
-    });
+
+            // 3) استبدال الصور الإضافية بالكامل (أفضل UX في التعديل)
+            if ($request->hasFile('images')) {
+
+                // احذف كل الصور غير الرئيسية القديمة
+                $oldAdditional = $glasses->images()->where('is_primary', false)->get();
+
+                foreach ($oldAdditional as $img) {
+                    Storage::disk('public')->delete($img->path);
+                    $img->delete();
+                }
+
+                // خزّن الجديدة (حد أقصى 3)
+                $uploads = array_slice($request->file('images'), 0, 3);
+
+                foreach ($uploads as $image) {
+                    $path = $image->store('glasses', 'public');
+
+                    if (!$path) {
+                        throw new \RuntimeException('Failed to store additional glasses image.');
+                    }
+
+                    $glasses->images()->create([
+                        'path' => $path,
+                        'is_primary' => false,
+                    ]);
+                }
+            }
+        });
+    } catch (\Throwable $e) {
+        \Log::error('Failed to update glasses images', [
+            'glasses_id' => $glasses->id,
+            'error' => $e->getMessage(),
+        ]);
+
+        return back()->withInput()->with('error', 'Image upload failed. Please try again.');
+    }
 
     // مهم: اعمل refresh عشان تشوف الصور الجديدة مباشرة
     $glasses->refresh()->load(['images', 'primaryImage']);
@@ -356,12 +380,11 @@ public function update(Request $request, Glasses $glasses)
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(Glasses $glasses)
 {
-    $glasses = Glasses::with('images')
-        ->where('id', $id)
-        ->where('user_id', auth()->id())
-        ->firstOrFail(); // إذا ليست له -> 404
+    $this->authorize('delete', $glasses);
+
+    $glasses->load('images');
 
     foreach ($glasses->images as $image) {
         Storage::disk('public')->delete($image->path);
@@ -374,18 +397,13 @@ public function update(Request $request, Glasses $glasses)
         ->with('success', 'Glasses deleted successfully.');
 }
 
-public function destroyImage($glassesId, $imageId)
+public function destroyImage(Glasses $glasses, GlassesImage $image)
 {
     // 1️⃣ تأكد أن النظارة تخص المستخدم الحالي
-    $glasses = Glasses::where('id', $glassesId)
-        ->where('user_id', auth()->id())
-        ->firstOrFail();
+    $this->authorize('update', $glasses);
 
     // 2️⃣ تأكد أن الصورة تابعة لهذه النظارة وليست الصورة الرئيسية
-    $image = $glasses->images()
-        ->where('id', $imageId)
-        ->where('is_primary', false) // منع حذف الصورة الرئيسية من هنا
-        ->firstOrFail();
+    abort_if($image->glasses_id !== $glasses->id || $image->is_primary, 404);
 
     // 3️⃣ حذف الصورة من التخزين
     if (Storage::disk('public')->exists($image->path)) {

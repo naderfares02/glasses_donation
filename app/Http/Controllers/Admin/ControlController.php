@@ -15,7 +15,7 @@ class ControlController extends Controller
 
     $legal = LegalPage::query()
         ->whereIn('key', ['terms', 'privacy'])
-        ->orderByRaw("FIELD(`key`, 'terms','privacy')")
+        ->orderByRaw("CASE `key` WHEN 'terms' THEN 1 WHEN 'privacy' THEN 2 ELSE 3 END")
         ->get()
         ->keyBy('key');
 

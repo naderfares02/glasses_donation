@@ -128,7 +128,7 @@
                             Reference: <span class="font-semibold text-gray-700"> {{ $glasses->serial_number }}</span>
                         </p>
                     </div>
-                    @if ($glasses->status !== 'donated')
+                    @if (!in_array($glasses->status, ['donated', 'pending_donation']))
 
                         {{-- Quick actions --}}
                         <div class="flex flex-wrap items-center gap-3">
@@ -145,16 +145,18 @@
                                 Edit
                             </a>
 
-                            {{-- Delete --}}
-                            <form action="{{ route('donor.glasses.destroy', $glasses->id) }}" method="POST"
-                                onsubmit="return confirm('Are you sure you want to delete this listing?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                    class="px-4 py-2.5 rounded-xl border bg-red-50 hover:bg-red-100 text-sm font-semibold text-red-700">
-                                    Delete
-                                </button>
-                            </form>
+                            {{-- Delete: available only --}}
+                            @if ($glasses->status === 'available')
+                                <form action="{{ route('donor.glasses.destroy', $glasses->id) }}" method="POST"
+                                    onsubmit="return confirm('Are you sure you want to delete this listing?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                        class="px-4 py-2.5 rounded-xl border bg-red-50 hover:bg-red-100 text-sm font-semibold text-red-700">
+                                        Delete
+                                    </button>
+                                </form>
+                            @endif
 
                         </div>
                     @endif

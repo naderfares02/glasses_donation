@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class LegalPage extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'key','title','content','updated_by','published_at'
     ];

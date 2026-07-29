@@ -10,7 +10,7 @@ class LegalPagesController extends Controller
 {
     public function index()
     {
-        $pages = LegalPage::orderBy('key')->get();
+        $pages = LegalPage::with('editor:id,name')->orderBy('key')->get();
         return view('admin.legal.index', compact('pages'));
     }
 

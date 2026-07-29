@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Glasses extends Model
 {
+    use HasFactory;
+
     // لو جدولك فيه timestamps اتركها (Laravel الافتراضي true)
     // public $timestamps = true;
 

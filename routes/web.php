@@ -195,9 +195,11 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin', 'active'])
                 ->name('donation_requests.show');
 
             Route::post('/donation-requests/{donationRequest}/approve', [DonationRequestController::class, 'approve'])
+                ->middleware('throttle:20,1')
                 ->name('donation_requests.approve');
 
             Route::post('/donation-requests/{donationRequest}/reject', [DonationRequestController::class, 'reject'])
+                ->middleware('throttle:20,1')
                 ->name('donation_requests.reject');
 
             Route::get('/conversations/{conversation}', [ChatController::class, 'show'])
@@ -221,18 +223,22 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin', 'active'])
 
             // Actions
             Route::post('/users/{user}/suspend', [\App\Http\Controllers\Admin\UserManagementController::class, 'suspend'])
+                ->middleware('throttle:30,1')
                 ->name('users.suspend');
 
             Route::post('/users/{user}/unsuspend', [\App\Http\Controllers\Admin\UserManagementController::class, 'unsuspend'])
+                ->middleware('throttle:30,1')
                 ->name('users.unsuspend');
 
             Route::post('/users/{user}/role', [\App\Http\Controllers\Admin\UserManagementController::class, 'changeRole'])
+                ->middleware('throttle:30,1')
                 ->name('users.change_role')->middleware('role:super_admin');
 
             Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserManagementController::class, 'destroy'])
                 ->name('users.destroy');
 
             Route::post('/users/{id}/restore', [\App\Http\Controllers\Admin\UserManagementController::class, 'restore'])
+                ->middleware('throttle:30,1')
                 ->name('users.restore');
 
             Route::post('/users/{user}/close-open-conversations', [\App\Http\Controllers\Admin\UserManagementController::class, 'closeOpenConversations'])
@@ -269,16 +275,16 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin', 'active'])
             // ->name('system.maintenance.up');
 
             Route::post('/settings/maintenance/on', [SystemSettingsController::class, 'enableMaintenance'])
-                ->name('settings.maintenance.on')->middleware('role:super_admin');
+                ->name('settings.maintenance.on')->middleware(['role:super_admin', 'throttle:5,1']);
 
             Route::post('/settings/maintenance/off', [SystemSettingsController::class, 'disableMaintenance'])
-                ->name('settings.maintenance.off')->middleware('role:super_admin');
+                ->name('settings.maintenance.off')->middleware(['role:super_admin', 'throttle:5,1']);
 
             Route::post('/cache/clear', [SystemSettingsController::class, 'clearCache'])
-                ->name('system.cache.clear')->middleware('role:super_admin');
+                ->name('system.cache.clear')->middleware(['role:super_admin', 'throttle:5,1']);
 
             Route::post('/optimize', [SystemSettingsController::class, 'optimize'])
-                ->name('system.optimize')->middleware('role:super_admin');
+                ->name('system.optimize')->middleware(['role:super_admin', 'throttle:5,1']);
 
             Route::get('/complaints', [AdminComplaintController::class, 'index'])->name('complaints.index');
             Route::get('/complaints/{complaint}', [AdminComplaintController::class, 'show'])->name('complaints.show');
@@ -298,10 +304,10 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin', 'active'])
 */
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::patch('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
-    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+    Route::patch('/profile', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->middleware('throttle:5,1')->name('profile.destroy');
+    Route::patch('/profile/avatar', [ProfileController::class, 'updateAvatar'])->middleware('throttle:10,1')->name('profile.avatar.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->middleware('throttle:10,1')->name('profile.avatar.destroy');
 });
 
 /*
@@ -322,7 +328,7 @@ Route::get('/suspended', function () {
 Route::post('/conversations/{conversation}/complaints', [ComplaintController::class, 'store'])->middleware('auth')->name('complaints.store');
 Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->middleware('auth')->name('complaints.show');
 Route::post('/complaints/{complaint}/message', [ComplaintController::class, 'message'])->middleware('auth')->name('complaints.message');
-Route::post('/complaints/{complaint}/close', [ComplaintController::class, 'close'])->name('complaints.close');
+Route::post('/complaints/{complaint}/close', [ComplaintController::class, 'close'])->middleware('auth')->name('complaints.close');
 
 /*
 |--------------------------------------------------------------------------

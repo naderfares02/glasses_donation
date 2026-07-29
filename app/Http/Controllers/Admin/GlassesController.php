@@ -39,7 +39,14 @@ public function index(Request $request)
     }
 
     $query->orderByRaw("
-        FIELD(status, 'pending_donation', 'in_contact', 'reserved', 'available', 'donated')
+        CASE status
+            WHEN 'pending_donation' THEN 1
+            WHEN 'in_contact' THEN 2
+            WHEN 'reserved' THEN 3
+            WHEN 'available' THEN 4
+            WHEN 'donated' THEN 5
+            ELSE 6
+        END
     ");
     $query->orderByDesc('created_at');
 

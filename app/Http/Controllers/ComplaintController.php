@@ -74,13 +74,24 @@ class ComplaintController extends Controller
             'messages.sender:id,name',
         ]);
 
-        return view('complaints.show', compact('complaint'));
+        $lastMessage = $complaint->messages->last();
+        $canUserSend = !$lastMessage || $lastMessage->sender_role === 'admin';
+
+        return view('complaints.show', compact('complaint', 'canUserSend'));
     }
 
     public function message(Request $request, Complaint $complaint)
     {
         abort_if($complaint->reporter_id !== auth()->id(), 403);
         abort_if(in_array($complaint->status, ['resolved','dismissed'], true), 403);
+
+        // المستخدم يقدر يرسل بس إذا آخر رسالة كانت من الأدمن (أو ما في ولا رسالة بعد)
+        $lastMessage = $complaint->messages()->reorder('id', 'desc')->first();
+        $canUserSend = !$lastMessage || $lastMessage->sender_role === 'admin';
+
+        if (!$canUserSend) {
+            return back()->with('error', 'Please wait for an admin reply before sending another message.');
+        }
 
         $data = $request->validate([
             'body' => ['required', 'string', 'max:3000'],

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DonationRequest extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
     'glasses_id','conversation_id','donor_id','recipient_id',
     'status','delivered_date','donor_note','admin_note',

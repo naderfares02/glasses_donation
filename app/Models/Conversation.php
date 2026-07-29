@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Conversation extends Model
 {
+    use HasFactory;
+
     protected $fillable = ['contact_request_id','glasses_id','donor_id','recipient_id','status'];
 
     public function request() { return $this->belongsTo(ContactRequest::class,'contact_request_id'); }

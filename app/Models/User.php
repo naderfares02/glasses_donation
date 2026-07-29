@@ -74,6 +74,20 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'role_changed_by');
     }
 
+    /**
+     * اسم الراوت الذي يمثل "الرئيسية" الخاصة بهذا المستخدم حسب دوره.
+     * يُستخدم بدلاً من route('dashboard') الذي لا وجود له في هذا المشروع.
+     */
+    public function homeRouteName(): string
+    {
+        return match ($this->role) {
+            'donor' => 'donor.main_page',
+            'recipient' => 'recipient.main_page',
+            'admin', 'super_admin' => 'admin.dashboard',
+            default => 'home',
+        };
+    }
+
         public function isSuspended(): bool
     {
         return $this->status === 'suspended';

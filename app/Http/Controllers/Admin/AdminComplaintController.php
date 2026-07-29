@@ -39,7 +39,13 @@ class AdminComplaintController extends Controller
             });
         }
 
-        $query->orderByRaw("FIELD(status,'open','reviewing','resolved','dismissed')");
+        $query->orderByRaw("CASE status
+            WHEN 'open' THEN 1
+            WHEN 'reviewing' THEN 2
+            WHEN 'resolved' THEN 3
+            WHEN 'dismissed' THEN 4
+            ELSE 5
+        END");
         $query->latest();
 
         $complaints = $query->paginate(15)->withQueryString();

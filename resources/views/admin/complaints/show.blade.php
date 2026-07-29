@@ -81,10 +81,14 @@
                         <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
                             <div
                                 class="max-w-[75%] rounded-2xl px-4 py-3
-                                                                                                {{ $mine ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800' }}">
+                                                                                                        {{ $mine ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800' }}">
                                 <p class="text-sm whitespace-pre-line">{{ $msg->body }}</p>
                                 <p class="text-[11px] mt-2 opacity-75">
-                                    {{ $msg->sender->name }} • {{ $msg->created_at->format('Y-m-d H:i') }}
+                                    @if ($msg->sender_role === 'admin' || $msg->sender->role === 'super_admin')
+                                        Admin • {{ $msg->created_at->format('Y-m-d H:i') }}
+                                    @else
+                                        {{ $msg->sender->name }} • {{ $msg->created_at->format('Y-m-d H:i') }}
+                                    @endif
                                 </p>
                             </div>
                         </div>

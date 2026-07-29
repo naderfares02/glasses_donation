@@ -5,10 +5,9 @@ namespace App\Notifications;
 use App\Models\Complaint;
 use App\Models\ComplaintMessage;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class ComplaintReplyFromAdminNotification extends Notification implements ShouldQueue
+class ComplaintReplyFromAdminNotification extends Notification 
 {
     use Queueable;
 

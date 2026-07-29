@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ContactRequest extends Model
 {
+    use HasFactory;
+
      protected $fillable = [
         'glasses_id','donor_id','recipient_id','status','accepted_at','closed_at'
     ];

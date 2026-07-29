@@ -54,19 +54,26 @@ public function index(Request $request)
         $query->whereNull('deleted_at');
     }
 
-    // ترتيب حسب الدور
-    $query->orderByRaw("FIELD(role, 'admin','donor','recipient')");
+    // ترتيب حسب الدور (CASE بدل FIELD() عشان يشتغل على SQLite بالتستات كمان)
+    $query->orderByRaw("
+        CASE role
+            WHEN 'admin' THEN 1
+            WHEN 'donor' THEN 2
+            WHEN 'recipient' THEN 3
+            ELSE 4
+        END
+    ");
     $query->orderByDesc('created_at');
 
     $users = $query->paginate(12)->withQueryString();
 
-    // Counts (بدون super_admin)
+    // Counts
     $countsRow = User::withTrashed()
-        ->where('role', '!=', 'super_admin')
         ->selectRaw("
             SUM(role='donor') as donors,
             SUM(role='recipient') as recipients,
             SUM(role='admin') as admins,
+            SUM(role='super_admin') as super_admins,
             SUM(status='suspended') as suspended,
             SUM(deleted_at IS NOT NULL) as deleted_count,
             COUNT(*) as all_count
@@ -74,12 +81,13 @@ public function index(Request $request)
         ->first();
 
     $counts = [
-        'all'       => (int) ($countsRow->all_count ?? 0),
-        'donor'     => (int) ($countsRow->donors ?? 0),
-        'recipient' => (int) ($countsRow->recipients ?? 0),
-        'admin'     => (int) ($countsRow->admins ?? 0),
-        'suspended' => (int) ($countsRow->suspended ?? 0),
-        'deleted'   => (int) ($countsRow->deleted_count ?? 0),
+        'all'         => (int) ($countsRow->all_count ?? 0),
+        'donor'       => (int) ($countsRow->donors ?? 0),
+        'recipient'   => (int) ($countsRow->recipients ?? 0),
+        'admin'       => (int) ($countsRow->admins ?? 0),
+        'super_admin' => (int) ($countsRow->super_admins ?? 0),
+        'suspended'   => (int) ($countsRow->suspended ?? 0),
+        'deleted'     => (int) ($countsRow->deleted_count ?? 0),
     ];
 
     return view('admin.users.index', compact('users', 'counts', 'q', 'role', 'status', 'deleted'));

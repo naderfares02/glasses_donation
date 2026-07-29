@@ -80,11 +80,11 @@
                             @if (auth()->user()->role === 'recipient')
                                 <div
                                     class="max-w-[75%] rounded-2xl px-4 py-3
-                                                                                                {{ $mine ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-800' }}">
+                                                                                                        {{ $mine ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-800' }}">
                             @else
                                     <div
                                         class="max-w-[75%] rounded-2xl px-4 py-3
-                                                                                                {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
+                                                                                                        {{ $mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800' }}">
                                 @endif
                                     <p class="text-sm whitespace-pre-line">{{ $msg->body }}</p>
                                     <p class="text-[11px] mt-2 opacity-75">
@@ -99,26 +99,32 @@
 
                     {{-- Send Message --}}
                     @if(!in_array($complaint->status, ['resolved', 'dismissed']))
-                        <div class="p-5 border-t bg-gray-50">
-                            <form method="POST" action="{{ route('complaints.message', $complaint->id) }}"
-                                class="flex gap-3">
-                                @csrf
-                                <textarea name="body" rows="2" required
-                                    class="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-200"
-                                    placeholder="Write a message..."></textarea>
+                        @if($canUserSend)
+                            <div class="p-5 border-t bg-gray-50">
+                                <form method="POST" action="{{ route('complaints.message', $complaint->id) }}"
+                                    class="flex gap-3">
+                                    @csrf
+                                    <textarea name="body" rows="2" required
+                                        class="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-200"
+                                        placeholder="Write a message..."></textarea>
 
-                                @if (auth()->user()->role === 'recipient')
-                                    <button type="submit"
-                                        class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 rounded-xl">Send</button>
-                                @else
-                                    <button type="submit"
-                                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
-                                        Send
-                                @endif
+                                    @if (auth()->user()->role === 'recipient')
+                                        <button type="submit"
+                                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 rounded-xl">Send</button>
+                                    @else
+                                        <button type="submit"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 rounded-xl">
+                                            Send
+                                    @endif
 
-                                </button>
-                            </form>
-                        </div>
+                                    </button>
+                                </form>
+                            </div>
+                        @else
+                            <div class="p-5 text-sm text-gray-500 text-center border-t bg-gray-50">
+                                Your message has been sent. Please wait for an admin reply before sending another message.
+                            </div>
+                        @endif
                     @else
                         <div class="p-5 text-sm text-gray-500 text-center border-t bg-gray-50">
                             This complaint is closed.

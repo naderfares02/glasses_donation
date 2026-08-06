@@ -10,14 +10,22 @@ class DeliveryConfirmation extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'glasses_id','conversation_id','donor_id','recipient_id',
-        'status','donor_note','recipient_note','recipient_responded_at','donation_request_id',
-    ];
+protected $fillable = [
+    'glasses_id','conversation_id','donor_id','recipient_id',
+    'status','donor_note','recipient_note','recipient_responded_at','donation_request_id',
+    'overridden_by','override_reason','overridden_at','reminder_sent_at',
+];
 
-    public function glasses() { return $this->belongsTo(Glasses::class); }
-    public function conversation() { return $this->belongsTo(Conversation::class); }
-    public function donor() { return $this->belongsTo(User::class, 'donor_id'); }
-    public function recipient() { return $this->belongsTo(User::class, 'recipient_id'); }
-    public function donationRequest(){return $this->belongsTo(\App\Models\DonationRequest::class, 'donation_request_id');}
+protected $casts = [
+    'overridden_at' => 'datetime',
+    'recipient_responded_at' => 'datetime',
+    'reminder_sent_at' => 'datetime',
+];
+
+public function glasses() { return $this->belongsTo(Glasses::class); }
+public function conversation() { return $this->belongsTo(Conversation::class); }
+public function donor() { return $this->belongsTo(User::class, 'donor_id'); }
+public function recipient() { return $this->belongsTo(User::class, 'recipient_id'); }
+public function donationRequest(){return $this->belongsTo(\App\Models\DonationRequest::class, 'donation_request_id');}
+public function overriddenBy() { return $this->belongsTo(User::class, 'overridden_by'); }
 }

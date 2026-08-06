@@ -24,9 +24,9 @@ class DatabaseSeeder extends Seeder
                 UserSeeder::class,
         ]);
 
-        $this->call([
-        LegalPagesSeeder::class,
-        ]);
+        // $this->call([
+        // LegalPagesSeeder::class,
+        // ]);
 
         $this->call(SettingsSeeder::class);
 

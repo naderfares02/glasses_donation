@@ -3,21 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ContactRequest;
+use App\Models\DonationReceipt;
 use App\Models\DonationRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Notifications\DonorDonationApprovedNotification;
 use App\Notifications\DonorDonationRejectedNotification;
-use App\Models\DonationReceipt;
-use App\Models\ContactRequest;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class DonationRequestController extends Controller
 {
+    private function ensureAdmin(): void
+    {
+        abort_unless(auth()->check() && in_array(auth()->user()->role, ['admin', 'super_admin'], true), 403);
+    }
+
     public function index(Request $request)
     {
+
+        $this->ensureAdmin();
+
         $q = $request->string('q')->toString();
         $status = $request->string('status')->toString();
 
@@ -27,11 +35,13 @@ class DonationRequestController extends Controller
                 'donor:id,name,email,avatar',
                 'recipient:id,name,email,avatar',
             ])
-            ->when($status, fn($qq) => $qq->where('status', $status))
+            ->when($status, fn ($qq) => $qq->where('status', $status))
             ->when($q, function ($qq) use ($q) {
-                $qq->whereHas('glasses', fn($g) => $g->where('title', 'like', "%{$q}%"))
-                   ->orWhereHas('donor', fn($u) => $u->where('name', 'like', "%{$q}%")->orWhere('email','like',"%{$q}%"))
-                   ->orWhereHas('recipient', fn($u) => $u->where('name', 'like', "%{$q}%")->orWhere('email','like',"%{$q}%"));
+                $qq->where(function ($group) use ($q) {
+                    $group->whereHas('glasses', fn ($g) => $g->where('title', 'like', "%{$q}%"))
+                        ->orWhereHas('donor', fn ($u) => $u->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%"))
+                        ->orWhereHas('recipient', fn ($u) => $u->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%"));
+                });
             })
             ->orderByRaw("CASE 
                 WHEN status='pending' THEN 0
@@ -47,6 +57,9 @@ class DonationRequestController extends Controller
 
     public function show(DonationRequest $donationRequest)
     {
+
+        $this->ensureAdmin();
+
         $donationRequest->load([
             'glasses.primaryImage',
             'donor:id,name,email,avatar',
@@ -58,125 +71,216 @@ class DonationRequestController extends Controller
         return view('admin.donation_requests.show', compact('donationRequest'));
     }
 
+    public function approve(Request $request, DonationRequest $donationRequest)
+    {
 
+        $this->ensureAdmin();
 
-public function approve(Request $request, DonationRequest $donationRequest)
-{
-    // يسمح بالموافقة حتى لو كان مرفوض سابقاً
-    if (!in_array($donationRequest->status, ['pending', 'rejected'], true)) {
-        return back()->with('error', 'This request cannot be approved in its current status.');
-    }
-
-    // ✅ لازم المستفيد يكون أكد الاستلام فعلياً قبل ما الأدمن يوافق
-    $confirmation = $donationRequest->deliveryConfirmation; // بدون أقواس
-
-    if (!$confirmation || $confirmation->status !== 'received') {
-        return back()->with('error', 'Cannot approve: recipient has not confirmed receiving the glasses yet.');
-    }
-
-    $data = $request->validate([
-        'admin_note'      => ['nullable', 'string', 'max:2000'],
-        'delivered_date'  => ['nullable', 'date'],
-    ]);
-
-    // لو يوجد إيصال بالفعل
-    if ($donationRequest->receipt) {
-        return back()->with('error', 'Receipt already exists for this request.');
-    }
-
-    $receipt = DB::transaction(function () use ($donationRequest, $data) {
-
-        // 1) اعتماد الطلب
-        $donationRequest->update([
-            'status'      => 'approved',
-            'admin_note'  => $data['admin_note'] ?? null,
-            'reviewed_at' => now(),
-            'reviewed_by' => auth()->id(),
-        ]);
-
-        // 2) تحديث النظارة (كان مكرر مرتين بالأصل، عدلتها لمرة وحدة)
-        if ($donationRequest->glasses) {
-            $donationRequest->glasses->update(['status' => 'donated']);
+        if (! in_array($donationRequest->status, ['pending', 'rejected'], true)) {
+            return back()->with('error', 'This request cannot be approved in its current status.');
         }
 
-        ContactRequest::where('glasses_id', $donationRequest->glasses_id)
-            ->whereIn('status', ['pending', 'accepted', 'on_hold'])
-            ->update([
-                'status' => 'closed',
-            ]);
+        $confirmation = $donationRequest->deliveryConfirmation;
 
-        // 3) إنشاء الإيصال في DB
-        $receipt = DonationReceipt::create([
-            'donation_request_id' => $donationRequest->id,
-            'glasses_id'          => $donationRequest->glasses_id,
-            'donor_id'            => $donationRequest->donor_id,
-            'recipient_id'        => $donationRequest->recipient_id,
-            'approved_by'         => auth()->id(),
-            'delivered_date'      => $donationRequest->delivered_date,
-            'admin_note'          => $data['admin_note'] ?? null,
-            'receipt_code'        => 'RCPT-' . strtoupper(Str::random(10)),
-            'issued_at'           => now(),
+        if (! $confirmation || $confirmation->status !== 'received') {
+            return back()->with('error', 'Cannot approve: recipient has not confirmed receiving the glasses yet.');
+        }
+
+        $data = $request->validate([
+            'admin_note' => ['nullable', 'string', 'max:2000'],
+            'delivered_date' => ['nullable', 'date'],
         ]);
 
-        return $receipt;
-    });
+        try {
+            $receipt = DB::transaction(function () use ($donationRequest, $data) {
 
-    // ✅ توليد PDF خارج الترانزاكشن (أفضل)
-    $receipt->loadMissing(['donor', 'recipient', 'glasses', 'approver']);
+                // ✅ قفل الصف وإعادة التحقق من الحالة جوا الـ transaction
+                $locked = DonationRequest::whereKey($donationRequest->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-    $pdf = Pdf::loadView('receipts.pdf', [
-        'receipt' => $receipt,
-        'request' => $donationRequest,
-    ])->setPaper('a4');
+                if (! in_array($locked->status, ['pending', 'rejected'], true)) {
+                    throw new \RuntimeException('ALREADY_PROCESSED');
+                }
 
-    $path = "receipts/{$receipt->receipt_code}.pdf";
-    Storage::disk('public')->put($path, $pdf->output());
+                if ($locked->receipt) {
+                    throw new \RuntimeException('RECEIPT_EXISTS');
+                }
 
-    $receipt->update(['pdf_path' => $path]);
+                // 1) اعتماد الطلب — ما لازم تنسى هاي الخطوة!
+                $locked->update([
+                    'status' => 'approved',
+                    'admin_note' => $data['admin_note'] ?? null,
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                ]);
 
-    // إشعار المتبرع (صححت Notify -> notify، الحرف الكبير يعمل بالصدفة بـ PHP لأن أسماء الميثودز غير حساسة لحالة الأحرف، لكن الأفضل توحيدها بالحرف الصغير كباقي الكود)
-    $donationRequest->loadMissing('donor');
-    $donationRequest->donor->notify(new DonorDonationApprovedNotification($donationRequest));
+                // 2) تحديث النظارة
+                if ($locked->glasses) {
+                    $locked->glasses->update(['status' => 'donated']);
+                }
 
-    return redirect()
-        ->route('admin.receipts.show', $receipt->id)
-        ->with('success', 'Donation approved and receipt generated.');
-}
+                // 3) إقفال طلبات التواصل المرتبطة
+                ContactRequest::where('glasses_id', $locked->glasses_id)
+                    ->whereIn('status', ['pending', 'accepted', 'on_hold'])
+                    ->update(['status' => 'closed']);
 
+                // 4) إنشاء الإيصال — استخدم $locked مش $donationRequest
+                $receipt = DonationReceipt::create([
+                    'donation_request_id' => $locked->id,
+                    'glasses_id' => $locked->glasses_id,
+                    'donor_id' => $locked->donor_id,
+                    'recipient_id' => $locked->recipient_id,
+                    'approved_by' => auth()->id(),
+                    'delivered_date' => $locked->delivered_date,
+                    'admin_note' => $data['admin_note'] ?? null,
+                    'receipt_code' => 'RCPT-'.strtoupper(Str::random(10)),
+                    'issued_at' => now(),
+                ]);
+
+                return $receipt;
+            });
+        } catch (\RuntimeException $e) {
+            return back()->with('error', match ($e->getMessage()) {
+                'RECEIPT_EXISTS' => 'Receipt already exists for this request.',
+                'ALREADY_PROCESSED' => 'This request was already processed by another action.',
+                default => throw $e,
+            });
+        }
+
+        $donationRequest->refresh();
+
+        try {
+            $pdf = Pdf::loadView('receipts.pdf', [
+                'receipt' => $receipt->loadMissing(['donor', 'recipient', 'glasses', 'approver']),
+                'request' => $donationRequest,
+            ])->setPaper('a4');
+
+            $path = "receipts/{$receipt->receipt_code}.pdf";
+            Storage::disk('local')->put($path, $pdf->output()); // local بدل public (راجع ملاحظة القرص العام بالرد السابق)
+            $receipt->update(['pdf_path' => $path]);
+        } catch (\Throwable $e) {
+            report($e); // سجل الخطأ بالـ logs، ما توقف تنفيذ الطلب
+
+            return redirect()
+                ->route('admin.receipts.show', $receipt->id)
+                ->with('warning', 'Donation was approved, but the PDF receipt could not be generated. Please retry generating it.');
+        }
+
+        $donationRequest->loadMissing('donor');
+
+        try {
+            $donationRequest->donor?->notify(new DonorDonationApprovedNotification($donationRequest));
+        } catch (\Throwable $e) {
+            report($e); // فشل الإشعار ما لازم يفشّل كل العملية
+        }
+
+        return redirect()
+            ->route('admin.receipts.show', $receipt->id)
+            ->with('success', 'Donation approved and receipt generated.');
+    }
+
+
+
+    /**
+     * تجاوز إداري: تحويل حالة تأكيد الاستلام من "لم يستلم" إلى "استلم"
+     * يُستخدم فقط عندما يكون الأدمن متأكداً (عبر الشكوى/التواصل) أن المستفيد
+     * استلم فعلياً رغم أنه أنكر ذلك. يُسجَّل من قام بالتجاوز والسبب إلزامياً.
+     */
+    public function overrideConfirmation(Request $request, DonationRequest $donationRequest)
+    {
+        $confirmation = $donationRequest->deliveryConfirmation;
+
+        if (!$confirmation) {
+            return back()->with('error', 'No delivery confirmation found for this request.');
+        }
+
+        if ($confirmation->status !== 'not_received') {
+            return back()->with('error', 'Override is only allowed when the recipient has denied receiving the item.');
+        }
+
+        $data = $request->validate([
+            'override_reason' => ['required', 'string', 'min:10', 'max:2000'],
+        ]);
+
+        $confirmation->update([
+            'status'          => 'received',
+            'overridden_by'   => auth()->id(),
+            'override_reason' => $data['override_reason'],
+            'overridden_at'   => now(),
+        ]);
+
+        return back()->with('success', 'Confirmation overridden to "received". You can now approve the donation request.');
+    }
+
+    
     public function reject(Request $request, DonationRequest $donationRequest)
     {
+
+        $this->ensureAdmin();
+
         $data = $request->validate([
-            'admin_note' => ['required','string','max:2000'],
+            'admin_note' => ['required', 'string', 'max:2000'],
         ]);
 
         if ($donationRequest->status !== 'pending') {
             return back()->with('error', 'This request is not pending.');
         }
 
-        DB::transaction(function () use ($donationRequest, $data) {
-            $donationRequest->update([
-                'status' => 'rejected',
-                'admin_note' => $data['admin_note'],
-                'reviewed_at' => now(),
-                'reviewed_by' => auth()->id(),
-            ]);
+        try {
+            DB::transaction(function () use ($donationRequest, $data) {
 
-            $confirmation = $donationRequest->deliveryConfirmation;
+                // ✅ قفل الصف وإعادة التحقق من الحالة جوا الـ transaction
+                // (يمنع تعارض approve/reject لنفس الطلب بنفس اللحظة)
+                $locked = DonationRequest::whereKey($donationRequest->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-        //     if ($confirmation){
-        //     $confirmation->update([
-        //         'status' => 'not_received',
-        //         'updated_at' => now(),
-        //     ]);
-        // }
+                if ($locked->status !== 'pending') {
+                    throw new \RuntimeException('NOT_PENDING');
+                }
 
-            // ❗عند الرفض: ارجع النظارة متاحة (أو خلّيها in_contact حسب نظامك)
-            $donationRequest->glasses->update([
-                'status' => 'reserved',
-                'active_contact_request_id' => null,
-            ]);
-        });
+                $locked->update([
+                    'status' => 'rejected',
+                    'admin_note' => $data['admin_note'],
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                ]);
 
+                $confirmation = $locked->deliveryConfirmation;
+
+                if ($confirmation && $confirmation->status === 'received') {
+                    // المستفيد استلم النظارة فعلياً بإيده قبل ما يرفض الأدمن الطلب.
+                    // ما نرجعها "available" لأنها مش فاضية فعلياً — منستخدم حالة
+                    // "reserved" الموجودة أصلاً عشان تختفي من قائمة المتاح للجمهور
+                    // وتضل بحاجة متابعة يدوية من الأدمن مع المستفيد، بدل ما يقدر
+                    // مستفيد تاني يطلبها ويوعد فيها وهي أصلاً بحوزة حدا.
+                    $locked->glasses->update([
+                        'status' => 'reserved',
+                    ]);
+                    // ملاحظة: ما بنلغي active_contact_request_id ولا نرجّع طلبات
+                    // on_hold لـ pending هون، لأن النظارة لسا "محجوزة" فعلياً على
+                    // نفس المستفيد لحد ما الأدمن يتابع الموضوع يدوياً ويقرر.
+                } else {
+                    // ما في استلام فعلي — آمن نرجعها متاحة للجمهور من جديد
+                    $locked->glasses->update([
+                        'status' => 'available',
+                        'active_contact_request_id' => null,
+                    ]);
+
+                    ContactRequest::where('glasses_id', $locked->glasses_id)
+                        ->where('status', 'on_hold')
+                        ->update(['status' => 'pending']);
+                }
+            });
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'NOT_PENDING') {
+                return back()->with('error', 'This request was already processed by another action.');
+            }
+            throw $e;
+        }
+
+        $donationRequest->refresh();
         $donationRequest->loadMissing('donor');
         $donationRequest->donor->notify(new DonorDonationRejectedNotification($donationRequest));
 

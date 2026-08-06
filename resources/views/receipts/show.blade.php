@@ -8,7 +8,7 @@
             </div>
 
             <div class="flex gap-2">
-                <a href="{{ route('admin.receipts.download', $receipt->id) }}"
+                <a href="{{ $downloadUrl }}"
                     class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
                     Download PDF
                 </a>
@@ -37,6 +37,22 @@
                     </div>
                 </div>
 
+                {{-- Reference numbers strip --}}
+                <div class="px-6 pt-6">
+                    <div class="rounded-2xl border bg-gray-50 p-5 grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide">Receipt Code</p>
+                            <p class="text-sm font-mono font-bold text-gray-900 mt-1">{{ $receipt->receipt_code }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase tracking-wide">Glasses Reference No.</p>
+                            <p class="text-sm font-mono font-bold text-gray-900 mt-1">
+                                {{ $receipt->glasses?->serial_number ?? '—' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div class="rounded-2xl border p-5">
                         <p class="text-xs text-gray-500">Donor</p>
@@ -53,7 +69,30 @@
                     <div class="rounded-2xl border p-5 sm:col-span-2">
                         <p class="text-xs text-gray-500">Glasses</p>
                         <p class="text-sm font-bold text-gray-900 mt-1">{{ $receipt->glasses?->title ?? '—' }}</p>
-                        <p class="text-sm text-gray-600 mt-1">
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-3">
+
+                            <div>
+                                <p class="text-xs text-gray-500">Brand</p>
+                                <p class="text-sm font-semibold text-gray-900">
+                                    {{ $receipt->glasses?->brand ?? '—' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Condition</p>
+                                <p class="text-sm font-semibold text-gray-900">
+                                    {{ $receipt->glasses?->condition ? ucfirst($receipt->glasses->condition) : '—' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Lens type</p>
+                                <p class="text-sm font-semibold text-gray-900">
+                                    {{ $receipt->glasses?->lens_type ? ucfirst(str_replace('_', ' ', $receipt->glasses->lens_type)) : '—' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-gray-600 mt-4">
                             Delivered date: <span
                                 class="font-semibold">{{ $receipt->delivered_date?->format('Y-m-d') ?? '—' }}</span>
                         </p>
@@ -63,6 +102,14 @@
                         <p class="text-xs text-gray-500">Admin note</p>
                         <p class="text-sm text-gray-800 mt-1">{{ $receipt->admin_note ?: '—' }}</p>
                     </div>
+                </div>
+
+                <div class="px-6 pb-6">
+                    <p class="text-xs text-gray-400 text-center">
+                        This receipt certifies that the glasses referenced above were donated through
+                        {{ config('app.name', 'the platform') }} and reviewed by an administrator. This document is a
+                        proof of donation record only and does not constitute a tax-deduction certificate.
+                    </p>
                 </div>
             </div>
 

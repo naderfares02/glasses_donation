@@ -11,6 +11,9 @@ class ControlController extends Controller
 {
     public function index(Request $request)
 {
+
+    abort_unless(auth()->check(), 403);
+    
     $isSuperAdmin = auth()->user()->role === 'super_admin';
 
     $legal = LegalPage::query()

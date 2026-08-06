@@ -202,8 +202,11 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin', 'active'])
                 ->middleware('throttle:20,1')
                 ->name('donation_requests.reject');
 
-            Route::get('/conversations/{conversation}', [ChatController::class, 'show'])
-                ->name('conversations.show');
+            Route::post('/donation-requests/{donationRequest}/override-confirmation', [DonationRequestController::class, 'overrideConfirmation'])
+                ->middleware('throttle:10,1')
+                ->name('donation_requests.override_confirmation');
+
+            Route::get('/conversations/{conversation}', [ChatController::class, 'show'])->name('conversations.show');
 
             Route::post('/conversations/{conversation}/toggle', [ChatController::class, 'toggleStatus']
             )->name('conversations.toggle');

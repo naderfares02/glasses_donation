@@ -10,7 +10,10 @@ class ChatController extends Controller
     public function show(Conversation $conversation)
     {
         // السماح فقط للأدمن
-        abort_unless(in_array(auth()->user()->role, ['admin', 'super_admin']), 403);
+         abort_unless(
+        auth()->check() && in_array(auth()->user()->role, ['admin', 'super_admin'], true),
+        403
+        );
 
         // تحميل البيانات
         $conversation->load([
@@ -29,14 +32,19 @@ class ChatController extends Controller
     }
 
         public function toggleStatus(Conversation $conversation)
-    {
-        $newStatus = $conversation->status === 'open' ? 'closed' : 'open';
+        {
+            abort_unless(
+                auth()->check() && in_array(auth()->user()->role, ['admin', 'super_admin'], true),
+                403
+            );
 
-        $conversation->update([
-            'status' => $newStatus,
-        ]);
+            $newStatus = $conversation->status === 'open' ? 'closed' : 'open';
 
-        return back()->with('success', 'Conversation status updated.');
-    }
+            $conversation->update([
+                'status' => $newStatus,
+            ]);
+
+            return back()->with('success', 'Conversation status updated.');
+        }
     
 }

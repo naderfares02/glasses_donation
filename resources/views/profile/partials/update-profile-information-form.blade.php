@@ -48,6 +48,29 @@
                 </div>
             @endif
         </div>
+
+        <div id="current-password-wrapper" style="display: none;">
+            <x-input-label for="current_password" :value="__('Current Password (required to change email)')" />
+            <x-text-input id="current_password" name="current_password" type="password" class="mt-1 block w-full"
+                autocomplete="current-password" />
+            <x-input-error class="mt-2" :messages="$errors->get('current_password')" />
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const emailInput = document.getElementById('email');
+                const wrapper = document.getElementById('current-password-wrapper');
+                const originalEmail = @json($user->email);
+
+                function toggle() {
+                    wrapper.style.display = emailInput.value !== originalEmail ? 'block' : 'none';
+                }
+
+                emailInput.addEventListener('input', toggle);
+                toggle();
+            });
+        </script>
+
         <div class="flex items-center gap-3" style="margin-top: 115px">
             <x-primary-button>
                 {{ __('Save') }}

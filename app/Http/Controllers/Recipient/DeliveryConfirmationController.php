@@ -33,7 +33,9 @@ public function confirmReceived(Request $request, DeliveryConfirmation $confirma
 {
     abort_if($confirmation->recipient_id !== auth()->id(), 403);
 
-    if ($confirmation->status !== 'pending') {
+    // يسمح بالتأكيد لو الحالة pending (أول مرة) أو not_received (رجع عن قراره)
+    // لكن لو صار received أصلاً (وربما اعتُمد التبرع)، ما نسمح بأي تعديل إضافي
+    if (!in_array($confirmation->status, ['pending', 'not_received'], true)) {
         return back()->with('error', 'This request is already resolved.');
     }
 

@@ -9,6 +9,8 @@ use App\Models\Glasses;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\AdminRecipientConfirmedDeliveryNotification;
+use App\Notifications\AdminRecipientDeniedDeliveryNotification;
+use App\Notifications\DonorRecipientDeniedDeliveryNotification;
 
 class RecipientDonationsController extends Controller
 {
@@ -53,11 +55,11 @@ public function show(DeliveryConfirmation $confirmation)
     return view('recipient.donations.show', compact('confirmation'));
 }
 
-    public function markReceived(Request $request, DeliveryConfirmation $confirmation)
+public function markReceived(Request $request, DeliveryConfirmation $confirmation)
 {
     abort_if($confirmation->recipient_id !== auth()->id(), 403);
 
-  if ($confirmation->status !== 'pending') {
+    if (!in_array($confirmation->status, ['pending', 'not_received'], true)) {
         return back()->with('error', 'This request has already been resolved.');
     }
 
@@ -105,7 +107,15 @@ public function show(DeliveryConfirmation $confirmation)
             'recipient_responded_at' => now(),
         ]);
 
-        // (اختياري) هنا لاحقاً: إشعار للأدمن/المتبرع أن المستفيد نفى
+        $donationRequest = $confirmation->donationRequest;
+
+        if ($donationRequest) {
+            $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
+            Notification::send($admins, new AdminRecipientDeniedDeliveryNotification($donationRequest));
+
+            $donationRequest->loadMissing('donor');
+            $donationRequest->donor->notify(new DonorRecipientDeniedDeliveryNotification($donationRequest));
+        }
 
         return redirect()
             ->route('recipient.donations.index', ['tab' => 'not_received'])

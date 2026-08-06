@@ -42,11 +42,9 @@ class RecipientContactRequestController extends Controller
 
     $recipientId = auth()->id();
 
-    // منع إنشاء طلب جديد إذا كان هناك طلب سابق
-    // بحالة pending أو accepted أو rejected
     $exists = ContactRequest::where('glasses_id', $glasses->id)
         ->where('recipient_id', $recipientId)
-        ->whereIn('status', ['pending', 'accepted', 'rejected'])
+        ->whereIn('status', ['pending', 'accepted', 'on_hold', 'rejected'])
         ->exists();
 
     if ($exists) {
@@ -56,14 +54,17 @@ class RecipientContactRequestController extends Controller
         );
     }
 
-    $request = ContactRequest::create([
-        'glasses_id'   => $glasses->id,
-        'donor_id'     => $glasses->user_id,
-        'recipient_id' => $recipientId,
-        'status'       => 'pending',
-    ]);
+    try {
+        $request = ContactRequest::create([
+            'glasses_id'   => $glasses->id,
+            'donor_id'     => $glasses->user_id,
+            'recipient_id' => $recipientId,
+            'status'       => 'pending',
+        ]);
+    } catch (\Illuminate\Database\QueryException $e) {
+        return back()->with('error', 'You already have an active request for this glasses.');
+    }
 
-    // إرسال إشعار للمتبرع
     $donor = User::find($glasses->user_id);
 
     if ($donor) {

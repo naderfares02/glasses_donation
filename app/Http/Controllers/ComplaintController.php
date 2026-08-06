@@ -15,12 +15,20 @@ class ComplaintController extends Controller
     public function store(Request $request, Conversation $conversation)
     {
         abort_if(!in_array(auth()->user()->role, ['donor','recipient'], true), 403);
-
-        // لازم يكون طرف بالمحادثة
         abort_if(
             auth()->id() !== $conversation->donor_id && auth()->id() !== $conversation->recipient_id,
             403
         );
+
+        // ✅ منع فتح شكوى ثانية مفتوحة على نفس المحادثة من نفس المستخدم
+        $hasOpenComplaint = Complaint::where('conversation_id', $conversation->id)
+            ->where('reporter_id', auth()->id())
+            ->whereIn('status', ['open', 'reviewing'])
+            ->exists();
+
+        if ($hasOpenComplaint) {
+            return back()->with('error', 'You already have an open complaint for this conversation.');
+        }
 
         $data = $request->validate([
             'reason'      => ['required', 'string', 'max:50'],

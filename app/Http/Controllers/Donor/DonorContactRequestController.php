@@ -11,9 +11,6 @@ use Illuminate\Support\Facades\DB;
 use App\Models\DonationRequest;
 use App\Models\DeliveryConfirmation;
 use App\Notifications\RecipientMustConfirmDeliveryNotification;
-use App\Models\User;
-use Illuminate\Support\Facades\Notification;
-use App\Notifications\AdminNewDonationRequestNotification;
 use App\Notifications\ContactRequestRejectedNotification;
 use App\Notifications\ContactRequestAcceptedNotification;
 class DonorContactRequestController extends Controller
@@ -102,50 +99,84 @@ public function accept(ContactRequest $request)
 }
 
 
-
 public function disconnect(Conversation $conversation)
 {
     abort_if($conversation->donor_id !== auth()->id(), 403);
 
-    // ✅ حمّل العلاقات لتفادي null
-    $conversation->loadMissing(['request.glasses']);
-
-    $glasses = $conversation->request?->glasses;
-
-    // إذا ما في request/glasses (حالة نادرة) اقفل المحادثة فقط
-    $conversation->update(['status' => 'closed']);
-
-    if ($conversation->request) {
-        $conversation->request->update([
-            'status' => 'closed',
-            'closed_at' => now(),
-        ]);
+    // ✅ فحص أولي سريع (تجربة مستخدم أفضل، بدون الاعتماد عليه للحماية الفعلية)
+    if ($conversation->status !== 'open') {
+        return redirect()
+            ->route('donor.chats.index', ['conversation' => $conversation->id])
+            ->with('error', 'This conversation is already closed.');
     }
 
-    if ($glasses && $glasses->status !== 'donated') {
-        $glasses->update([
-            'status' => 'available',
-            'active_contact_request_id' => null,
-        ]);
-    }
+    try {
+        DB::transaction(function () use ($conversation) {
 
-    if ($glasses) {
-            ContactRequest::where('glasses_id', $glasses->id)
-                ->where('status', 'on_hold')
-                ->update(['status' => 'pending']);
+            // ✅ الحماية الفعلية: قفل صف الـ conversation وإعادة التحقق من حالتها
+            // داخل نفس الـ transaction، لمنع تنفيذ disconnect() مرتين بالتوازي
+            // (أو بالتوازي مع markDonated() على نفس المحادثة).
+            $lockedConversation = Conversation::whereKey($conversation->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedConversation->status !== 'open') {
+                throw new \RuntimeException('CONVERSATION_NOT_OPEN');
+            }
+
+            $lockedConversation->loadMissing(['request']);
+
+            $glasses = $lockedConversation->request
+                ? Glasses::whereKey($lockedConversation->request->glasses_id)
+                    ->lockForUpdate()
+                    ->first()
+                : null;
+
+            $lockedConversation->update(['status' => 'closed']);
+
+            if ($lockedConversation->request) {
+                $lockedConversation->request->update([
+                    'status' => 'closed',
+                    'closed_at' => now(),
+                ]);
+            }
+
+            if ($glasses && $glasses->status !== 'donated') {
+                $glasses->update([
+                    'status' => 'available',
+                    'active_contact_request_id' => null,
+                ]);
+            }
+
+            if ($glasses) {
+                ContactRequest::where('glasses_id', $glasses->id)
+                    ->where('status', 'on_hold')
+                    ->update(['status' => 'pending']);
+            }
+        });
+    } catch (\RuntimeException $e) {
+        if ($e->getMessage() === 'CONVERSATION_NOT_OPEN') {
+            return redirect()
+                ->route('donor.chats.index', ['conversation' => $conversation->id])
+                ->with('error', 'This conversation is already closed.');
         }
+        throw $e;
+    }
 
-    // ✅ الأفضل: توجيه لصفحة inbox وفتح نفس المحادثة
     return redirect()
         ->route('donor.chats.index', ['conversation' => $conversation->id])
         ->with('success', 'Connection closed. Glasses is available again.');
 }
 
 
-
 public function reject(ContactRequest $request)
 {
     abort_if($request->donor_id !== auth()->id(), 403);
+
+    // ✅ منع رفض طلب مش pending (مقبول/مرفوض/مغلق أصلاً)
+    if ($request->status !== 'pending') {
+        return back()->with('error', 'This request is not pending.');
+    }
 
     $request->update(['status' => 'rejected']);
 
@@ -163,95 +194,94 @@ public function markDonated(Request $request, Glasses $glasses)
 
     $data = $request->validate([
         'conversation_id' => ['required','integer'],
-        'delivered_date'  => [ 'date','required'],
+        'delivered_date'  => ['date','required'],
         'donor_note'      => ['nullable', 'string', 'max:2000'],
     ]);
 
-    $conversation = Conversation::where('id', $data['conversation_id'])
+    // ✅ فحص أولي سريع (تجربة مستخدم أفضل، بدون الاعتماد عليه للحماية الفعلية)
+    $conversationExists = Conversation::where('id', $data['conversation_id'])
         ->where('glasses_id', $glasses->id)
         ->where('donor_id', auth()->id())
-        ->where('status', 'open')
-        ->first();
+        ->exists();
 
-    if (!$conversation) {
-        return back()->with('error', 'No open conversation found for this glasses.');
+    if (!$conversationExists) {
+        return back()->with('error', 'No conversation found for this glasses.');
     }
 
-    $conversation->loadMissing('recipient');
-
-    // ✅ اقرأ الإعداد مرة واحدة
     $requireAdminApproval = (bool) setting('donations.require_admin_approval_for_donated', true);
 
-    [$donationRequest, $confirmation] = DB::transaction(function () use ($glasses, $conversation, $data, $requireAdminApproval) {
+    try {
+        [$donationRequest, $confirmation, $conversation] = DB::transaction(function () use ($glasses, $data, $requireAdminApproval) {
 
-        $lockedGlasses = Glasses::whereKey($glasses->id)
-            ->lockForUpdate()
-            ->firstOrFail();
+            $lockedGlasses = Glasses::whereKey($glasses->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        // ✅ حدّد status لطلب التبرع بناءً على الإعداد
-        $donationStatus = $requireAdminApproval ? 'pending' : 'approved';
+            // ✅ الحماية الفعلية: قفل صف الـ conversation والتحقق من حالتها
+            // داخل نفس الـ transaction، بعد ما صار عندنا lock على Glasses.
+            // هيك ما ينفذ طلبين "markDonated" لنفس المحادثة بنفس اللحظة.
+            $conversation = Conversation::where('id', $data['conversation_id'])
+                ->where('glasses_id', $lockedGlasses->id)
+                ->where('donor_id', auth()->id())
+                ->lockForUpdate()
+                ->first();
 
-        // ✅ طلب التبرع: خليه واحد لكل نظارة (أسهل وأضمن من شرط pending)
-        $donationRequest = DonationRequest::updateOrCreate(
-            [
-                'glasses_id' => $lockedGlasses->id,
-            ],
-            [
-                'conversation_id' => $conversation->id,
-                'donor_id'        => $conversation->donor_id,
-                'recipient_id'    => $conversation->recipient_id,
-                'delivered_date'  => $data['delivered_date'] ?? null,
-                'donor_note'      => $data['donor_note'] ?? null,
-                'status'          => $donationStatus,
-            ]
-        );
+            if (!$conversation || $conversation->status !== 'open') {
+                throw new \RuntimeException('CONVERSATION_NOT_OPEN');
+            }
 
-        $confirmation = DeliveryConfirmation::updateOrCreate(
-            [
-                'donation_request_id' => $donationRequest->id,
-            ],
-            [
-                'conversation_id' => $donationRequest->conversation_id,
-                'glasses_id'      => $donationRequest->glasses_id,
-                'donor_id'        => $donationRequest->donor_id,
-                'recipient_id'    => $donationRequest->recipient_id,
-                'status'          => 'pending',
-                'recipient_note'  => null,
-                'confirmed_at'    => null,
-                'denied_at'       => null,
-            ]
-        );
+            $conversation->loadMissing('recipient');
 
-        $lockedGlasses->update([
-            'status' => $requireAdminApproval ? 'pending_donation' : 'donated',
-        ]);
+            $donationStatus = $requireAdminApproval ? 'pending' : 'approved';
 
-        $conversation->update([
-            'status' => 'closed',
-        ]);
+            $donationRequest = DonationRequest::updateOrCreate(
+                ['glasses_id' => $lockedGlasses->id],
+                [
+                    'conversation_id' => $conversation->id,
+                    'donor_id'        => $conversation->donor_id,
+                    'recipient_id'    => $conversation->recipient_id,
+                    'delivered_date'  => $data['delivered_date'] ?? null,
+                    'donor_note'      => $data['donor_note'] ?? null,
+                    'status'          => $donationStatus,
+                ]
+            );
 
-        return [$donationRequest, $confirmation];
-    });
+            $confirmation = DeliveryConfirmation::updateOrCreate(
+                ['donation_request_id' => $donationRequest->id],
+                [
+                    'conversation_id' => $donationRequest->conversation_id,
+                    'glasses_id'      => $donationRequest->glasses_id,
+                    'donor_id'        => $donationRequest->donor_id,
+                    'recipient_id'    => $donationRequest->recipient_id,
+                    'status'          => 'pending',
+                    'recipient_note'  => null,
+                    'confirmed_at'    => null,
+                    'denied_at'       => null,
+                ]
+            );
 
-    // ✅ إشعار للمستفيد دائمًا
-    $conversation->recipient->notify( new RecipientMustConfirmDeliveryNotification($confirmation));
+            $lockedGlasses->update([
+                'status' => $requireAdminApproval ? 'pending_donation' : 'donated',
+            ]);
 
-    // ✅ إشعار للأدمن فقط إذا مطلوب موافقة
-    if ($requireAdminApproval) {
-        $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
+            $conversation->update(['status' => 'closed']);
 
-    Notification::send(
-        $admins,
-        new AdminNewDonationRequestNotification($donationRequest)
-    );
-    
+            return [$donationRequest, $confirmation, $conversation];
+        });
+} catch (\RuntimeException $e) {
+        if ($e->getMessage() === 'CONVERSATION_NOT_OPEN') {
+            return back()->with('error', 'No open conversation found for this glasses.');
+        }
+        throw $e;
     }
 
-    return redirect()
-        ->route('donor.chats.index', ['conversation' => $conversation->id])
-        ->with('success', $requireAdminApproval
-            ? 'Donation request sent. Recipient and admin have been notified.'
-            : 'Marked as donated. Recipient has been notified.'
-        );
+   $confirmation->recipient?->notify(new RecipientMustConfirmDeliveryNotification($confirmation));
+
+    return redirect()->route('donor.chats.index', ['conversation' => $conversation->id])->with(
+        'success',
+        $requireAdminApproval
+            ? 'Marked as delivered. Waiting for admin approval.'
+            : 'Marked as delivered successfully.'
+    );
 }
 }

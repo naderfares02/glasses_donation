@@ -382,7 +382,7 @@ public function update(Request $request, Glasses $glasses)
      */
     public function destroy(Glasses $glasses)
 {
-    $this->authorize('delete', $glasses);
+    abort_unless($glasses->user_id === auth()->id(), 404);
 
     $glasses->load('images');
 
@@ -400,7 +400,7 @@ public function update(Request $request, Glasses $glasses)
 public function destroyImage(Glasses $glasses, GlassesImage $image)
 {
     // 1️⃣ تأكد أن النظارة تخص المستخدم الحالي
-    $this->authorize('update', $glasses);
+    abort_unless($glasses->user_id === auth()->id(), 404);
 
     // 2️⃣ تأكد أن الصورة تابعة لهذه النظارة وليست الصورة الرئيسية
     abort_if($image->glasses_id !== $glasses->id || $image->is_primary, 404);

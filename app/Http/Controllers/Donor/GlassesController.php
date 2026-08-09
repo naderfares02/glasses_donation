@@ -384,6 +384,10 @@ public function update(Request $request, Glasses $glasses)
 {
     abort_unless($glasses->user_id === auth()->id(), 404);
 
+    if ($glasses->status !== 'available') {
+        return back()->with('error', 'Glasses cannot be deleted if they have an ongoing or completed interaction.');
+    }
+
     $glasses->load('images');
 
     foreach ($glasses->images as $image) {

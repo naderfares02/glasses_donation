@@ -183,14 +183,16 @@ public function openClosedConversations(User $user)
         return view('admin.users.edit', compact('user'));
     }
 
-    public function update(Request $request, User $user)
+        public function update(Request $request, User $user)
     {
-        // تعديل بيانات بسيطة (بدون role هنا)
         $data = $request->validate([
-            'name' => ['required','string','max:255'],
-            'email' => ['required','email','max:255'],
+            'name'  => ['required','string','max:255'],
+            'email' => [
+                'required','email','max:255',
+                \Illuminate\Validation\Rule::unique(User::class)->ignore($user->id),
+            ],
             'phone' => ['required','string','max:30'],
-            'city' => ['required','string','max:255'],
+            'city'  => ['required','string','max:255'],
         ]);
 
         $user->update($data);
@@ -240,15 +242,34 @@ public function openClosedConversations(User $user)
 
     public function changeRole(Request $request, User $user)
     {
-        // فقط super_admin
         abort_if(auth()->user()->role !== 'super_admin', 403);
-
-        // ممنوع تغيّر دور نفسك
         abort_if($user->id === auth()->id(), 403);
 
         $data = $request->validate([
             'role' => ['required','in:donor,recipient,admin,super_admin'],
         ]);
+
+        // منع تغيير الدور طالما فيه عمليات نشطة معلّقة تحتاج صلاحية الدور الحالي
+        $hasActiveGlasses = Glasses::where('user_id', $user->id)
+            ->whereNotIn('status', ['available', 'donated'])
+            ->exists();
+
+        $hasOpenConversations = Conversation::where('status', 'open')
+            ->where(function ($q) use ($user) {
+                $q->where('donor_id', $user->id)->orWhere('recipient_id', $user->id);
+            })->exists();
+
+        $hasPendingConfirmations = \App\Models\DeliveryConfirmation::where('recipient_id', $user->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        $hasPendingDonationRequests = DonationRequest::where('donor_id', $user->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasActiveGlasses || $hasOpenConversations || $hasPendingConfirmations || $hasPendingDonationRequests) {
+            return back()->with('error', 'Cannot change role: this user has active conversations, pending donations, or unresolved confirmations. Resolve them first.');
+        }
 
         $user->update([
             'role' => $data['role'],
@@ -261,13 +282,19 @@ public function openClosedConversations(User $user)
 
     public function destroy(User $user)
     {
-        // فقط super_admin يحذف
         abort_if(auth()->user()->role !== 'super_admin', 403);
         abort_if($user->id === auth()->id(), 403);
 
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            // سحب أي نظارات لسا متاحة أو محجوزة (بدون فتح تعارض مع دورات تبرع approved/donated موثّقة)
+            Glasses::where('user_id', $user->id)
+                ->whereIn('status', ['available', 'reserved', 'in_contact'])
+                ->update(['status' => 'donated']); // أو حالة "withdrawn" مخصصة لو حبيت تضيفها لاحقًا
 
-        return back()->with('success', 'User deleted (soft).');
+            $user->delete();
+        });
+
+        return back()->with('success', 'User deleted (soft). Their active listings were withdrawn.');
     }
 
     public function restore($id)

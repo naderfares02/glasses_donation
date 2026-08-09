@@ -62,11 +62,11 @@ class DonationReceiptTest extends TestCase
     #[Test]
     public function donor_can_download_their_receipt_pdf(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $donor = User::factory()->donor()->create();
         $file = UploadedFile::fake()->create('receipt.pdf', 10, 'application/pdf');
-        $path = $file->store('receipts', 'public');
+        $path = $file->store('receipts', 'local');
 
         $receipt = DonationReceipt::factory()->create([
             'donor_id' => $donor->id,

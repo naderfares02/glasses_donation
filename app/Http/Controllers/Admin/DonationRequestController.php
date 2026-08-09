@@ -187,28 +187,50 @@ class DonationRequestController extends Controller
      * يُستخدم فقط عندما يكون الأدمن متأكداً (عبر الشكوى/التواصل) أن المستفيد
      * استلم فعلياً رغم أنه أنكر ذلك. يُسجَّل من قام بالتجاوز والسبب إلزامياً.
      */
-    public function overrideConfirmation(Request $request, DonationRequest $donationRequest)
+        public function overrideConfirmation(Request $request, DonationRequest $donationRequest)
     {
-        $confirmation = $donationRequest->deliveryConfirmation;
-
-        if (!$confirmation) {
-            return back()->with('error', 'No delivery confirmation found for this request.');
-        }
-
-        if ($confirmation->status !== 'not_received') {
-            return back()->with('error', 'Override is only allowed when the recipient has denied receiving the item.');
-        }
+        $this->ensureAdmin();
 
         $data = $request->validate([
             'override_reason' => ['required', 'string', 'min:10', 'max:2000'],
         ]);
 
-        $confirmation->update([
-            'status'          => 'received',
-            'overridden_by'   => auth()->id(),
-            'override_reason' => $data['override_reason'],
-            'overridden_at'   => now(),
-        ]);
+        try {
+            DB::transaction(function () use ($donationRequest, $data) {
+
+                $locked = DonationRequest::whereKey($donationRequest->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($locked->status === 'rejected') {
+                    throw new \RuntimeException('ALREADY_REJECTED');
+                }
+
+                $confirmation = $locked->deliveryConfirmation()->lockForUpdate()->first();
+
+                if (!$confirmation) {
+                    throw new \RuntimeException('NO_CONFIRMATION');
+                }
+
+                if ($confirmation->status !== 'not_received') {
+                    throw new \RuntimeException('NOT_DENIED');
+                }
+
+                $confirmation->update([
+                    'status'          => 'received',
+                    'overridden_by'   => auth()->id(),
+                    'override_reason' => $data['override_reason'],
+                    'overridden_at'   => now(),
+                ]);
+            });
+        } catch (\RuntimeException $e) {
+            return back()->with('error', match ($e->getMessage()) {
+                'ALREADY_REJECTED' => 'Cannot override: this donation request was already rejected by the admin.',
+                'NO_CONFIRMATION' => 'No delivery confirmation found for this request.',
+                'NOT_DENIED' => 'Override is only allowed when the recipient has denied receiving the item.',
+                default => throw $e,
+            });
+        }
 
         return back()->with('success', 'Confirmation overridden to "received". You can now approve the donation request.');
     }

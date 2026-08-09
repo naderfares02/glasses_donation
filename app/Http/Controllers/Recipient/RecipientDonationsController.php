@@ -63,9 +63,17 @@ public function markReceived(Request $request, DeliveryConfirmation $confirmatio
         return back()->with('error', 'This request has already been resolved.');
     }
 
+    // الطلب الأصلي انحسم أصلاً من طرف الأدمن (رفض) — ما عاد له معنى يتفاعل معه المستفيد
+    $confirmation->loadMissing('donationRequest');
+    if ($confirmation->donationRequest?->status === 'rejected') {
+        return back()->with('error', 'This donation request has already been closed by the admin.');
+    }
+
     $data = $request->validate([
         'recipient_note' => ['nullable', 'string', 'max:2000'],
     ]);
+
+
 
     // 1) حدّث حالة التأكيد
     $confirmation->update([

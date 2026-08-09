@@ -28,8 +28,7 @@ public function download(DonationReceipt $receipt)
     $this->ensureAdmin();
     $this->authorize('download', $receipt);
 
-    abort_if(!$receipt->pdf_path || !Storage::disk('public')->exists($receipt->pdf_path), 404);
-
-    return Storage::disk('public')->download($receipt->pdf_path, $receipt->receipt_code . '.pdf');
+    abort_if(!$receipt->pdf_path || !Storage::disk('local')->exists($receipt->pdf_path), 404);
+    return Storage::disk('local')->download($receipt->pdf_path, $receipt->receipt_code . '.pdf');
 }
 }

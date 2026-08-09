@@ -70,11 +70,9 @@ class DashboardController extends Controller
         | Lens Type Filter
         |--------------------------------------------------------------------------
         */
-
-        if ($lensType !== '') {
-
+        
+        if ($lensType !== '' && in_array($lensType, \App\Models\Glasses::LENS_TYPES, true)) {
             $glasses->where('lens_type', $lensType);
-
         }
 
 

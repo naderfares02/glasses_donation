@@ -234,17 +234,29 @@ public function markDonated(Request $request, Glasses $glasses)
 
             $donationStatus = $requireAdminApproval ? 'pending' : 'approved';
 
-            $donationRequest = DonationRequest::updateOrCreate(
-                ['glasses_id' => $lockedGlasses->id],
-                [
-                    'conversation_id' => $conversation->id,
-                    'donor_id'        => $conversation->donor_id,
-                    'recipient_id'    => $conversation->recipient_id,
-                    'delivered_date'  => $data['delivered_date'] ?? null,
-                    'donor_note'      => $data['donor_note'] ?? null,
-                    'status'          => $donationStatus,
-                ]
-            );
+            $existingPending = DonationRequest::where('glasses_id', $lockedGlasses->id)
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->first();
+
+            $payload = [
+                'conversation_id' => $conversation->id,
+                'donor_id'        => $conversation->donor_id,
+                'recipient_id'    => $conversation->recipient_id,
+                'delivered_date'  => $data['delivered_date'] ?? null,
+                'donor_note'      => $data['donor_note'] ?? null,
+                'status'          => $donationStatus,
+            ];
+
+            if ($existingPending) {
+                $existingPending->update($payload);
+                $donationRequest = $existingPending;
+            } else {
+                $donationRequest = DonationRequest::create(array_merge(
+                    ['glasses_id' => $lockedGlasses->id],
+                    $payload
+                ));
+            }
 
             $confirmation = DeliveryConfirmation::updateOrCreate(
                 ['donation_request_id' => $donationRequest->id],
@@ -276,6 +288,13 @@ public function markDonated(Request $request, Glasses $glasses)
     }
 
    $confirmation->recipient?->notify(new RecipientMustConfirmDeliveryNotification($confirmation));
+
+    // الأدمن لازم يتنبّه بس لو الطلب فعليًا بحاجة مراجعته (pending)،
+    // مش لو انعمد تلقائيًا (approved) بدون تدخّله أصلًا
+    if ($requireAdminApproval) {
+        $admins = \App\Models\User::whereIn('role', ['admin', 'super_admin'])->get();
+        \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\AdminNewDonationRequestNotification($donationRequest));
+    }
 
     return redirect()->route('donor.chats.index', ['conversation' => $conversation->id])->with(
         'success',

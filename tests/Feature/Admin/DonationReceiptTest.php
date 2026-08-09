@@ -39,11 +39,11 @@ class DonationReceiptTest extends TestCase
     #[Test]
     public function admin_can_download_any_receipt_pdf(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = User::factory()->admin()->create();
         $file = UploadedFile::fake()->create('receipt.pdf', 10, 'application/pdf');
-        $path = $file->store('receipts', 'public');
+        $path = $file->store('receipts', 'local');
 
         $receipt = DonationReceipt::factory()->create(['pdf_path' => $path]);
 

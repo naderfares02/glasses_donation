@@ -67,49 +67,53 @@ class AdminComplaintController extends Controller
         return view('admin.complaints.show', compact('complaint'));
     }
 
-public function reply(Request $request, Complaint $complaint)
-{
-    $this->ensureAdmin();
-    if (
-        $complaint->handled_by &&
-        $complaint->handled_by !== auth()->id() &&
-        auth()->user()->role !== 'super_admin'
-    ) {
-        return back()->with('error', 'This complaint is already handled by another admin.');
-    }
-    $data = $request->validate([
-        'body' => ['required','string','max:3000'],
-    ]);
-$msg = DB::transaction(function () use ($complaint, $data) {
+        public function reply(Request $request, Complaint $complaint)
+        {
+            $this->ensureAdmin();
 
-    $locked = Complaint::whereKey($complaint->id)->lockForUpdate()->firstOrFail();
+            if (
+                $complaint->handled_by &&
+                $complaint->handled_by !== auth()->id() &&
+                auth()->user()->role !== 'super_admin'
+            ) {
+                return back()->with('error', 'This complaint is already handled by another admin.');
+            }
 
-    if ($locked->handled_by && $locked->handled_by !== auth()->id()) {
-        abort_if(auth()->user()->role !== 'super_admin', 403);
-    }
+            $data = $request->validate([
+                'body' => ['required','string','max:3000'],
+            ]);
 
-    if (!$locked->handled_by) {
-        $locked->update(['handled_by' => auth()->id()]);
-    }
+            try {
+                $msg = DB::transaction(function () use ($complaint, $data) {
+                    $locked = Complaint::whereKey($complaint->id)->lockForUpdate()->firstOrFail();
 
-    // ✅ استخدم $locked هون كمان
-    if ($locked->status === 'open') {
-        $locked->update(['status' => 'reviewing']);
-    }
+                    if ($locked->handled_by && $locked->handled_by !== auth()->id() && auth()->user()->role !== 'super_admin') {
+                        throw new \RuntimeException('ALREADY_HANDLED');
+                    }
 
-    // ✅ ونفس الشي هون
-    return ComplaintMessage::create([
-        'complaint_id' => $locked->id,
-        'sender_id'    => auth()->id(),
-        'sender_role'  => 'admin',
-        'body'         => $data['body'],
-    ]);
-});
-    // ✅ إشعار للمستخدم صاحب الشكوى
-    $complaint->reporter?->notify( new \App\Notifications\ComplaintReplyFromAdminNotification($complaint, $msg));
+                    if (!$locked->handled_by) {
+                        $locked->update(['handled_by' => auth()->id()]);
+                    }
 
-    return back()->with('success', 'Reply sent.');
-}
+                    if ($locked->status === 'open') {
+                        $locked->update(['status' => 'reviewing']);
+                    }
+
+                    return ComplaintMessage::create([
+                        'complaint_id' => $locked->id,
+                        'sender_id'    => auth()->id(),
+                        'sender_role'  => 'admin',
+                        'body'         => $data['body'],
+                    ]);
+                });
+            } catch (\RuntimeException $e) {
+                return back()->with('error', 'This complaint is already handled by another admin.');
+            }
+
+            $complaint->reporter?->notify(new \App\Notifications\ComplaintReplyFromAdminNotification($complaint, $msg));
+
+            return back()->with('success', 'Reply sent.');
+        }
 
         public function setStatus(Request $request, Complaint $complaint)
         {
@@ -139,25 +143,31 @@ $msg = DB::transaction(function () use ($complaint, $data) {
             return back()->with('success', 'Status updated.');
         }
 
-        public function close(Complaint $complaint)
+                public function close(Complaint $complaint)
         {
             $this->ensureAdmin();
 
-            DB::transaction(function () use ($complaint) {
+            $wasAlreadyClosed = DB::transaction(function () use ($complaint) {
                 $locked = Complaint::whereKey($complaint->id)->lockForUpdate()->firstOrFail();
 
                 if ($locked->handled_by && $locked->handled_by !== auth()->id()) {
                     abort_if(auth()->user()->role !== 'super_admin', 403);
                 }
 
-                if (!in_array($locked->status, ['resolved','dismissed'], true)) {
-                    $locked->update([
-                        'status' => 'resolved',
-                        'handled_by' => $locked->handled_by ?: auth()->id(),
-                    ]);
+                if (in_array($locked->status, ['resolved', 'dismissed'], true)) {
+                    return true; // كانت مغلقة أصلًا
                 }
+
+                $locked->update([
+                    'status' => 'resolved',
+                    'handled_by' => $locked->handled_by ?: auth()->id(),
+                ]);
+
+                return false;
             });
 
-            return back()->with('success', 'Complaint closed.');
+            return $wasAlreadyClosed
+                ? back()->with('info', 'This complaint was already closed.')
+                : back()->with('success', 'Complaint closed.');
         }
 }

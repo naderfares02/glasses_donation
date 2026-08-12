@@ -15,7 +15,6 @@ class DeliveryConfirmationReminderNotification extends Notification
 
     public function via($notifiable): array
     {
-        // نرسل بالإيميل + نسجل إشعار داخل النظام أيضاً
         return ['mail', 'database'];
     }
 

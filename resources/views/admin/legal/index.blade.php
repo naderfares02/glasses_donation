@@ -33,38 +33,74 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y">
-                        @forelse($pages as $page)
-                            <tr>
-                                <td class="px-6 py-4 font-semibold text-gray-900">{{ $page->title }}</td>
-                                <td class="px-6 py-4 text-gray-500">{{ $page->key }}</td>
-                                <td class="px-6 py-4">
-                                    @if($page->published_at)
-                                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
-                                            Published
-                                        </span>
-                                    @else
-                                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-600 border border-gray-200">
-                                            Draft
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-gray-500">
-                                    {{ $page->editor?->name ?? '—' }}
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <a href="{{ route('admin.legal.edit', $page) }}"
-                                        class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white">
-                                        Edit
-                                    </a>
-                                </td>
-                            </tr>
+
+                        <tr>
+                            <td class="px-6 py-4 font-semibold text-gray-900">Terms of Use</td>
+                            <td class="px-6 py-4 text-gray-500">{{ $pages->key }}</td>
+                            <td class="px-6 py-4">
+                                @if($pages->published_at)
+                                    <span
+                                        class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+                                        Published
+                                    </span>
+                                @else
+                                    <span
+                                        class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-600 border border-gray-200">
+                                        Draft
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-gray-500">
+                                {{ $pages->editor?->name ?? '—' }}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{{ route('admin.legal.edit', $pages) }}"
+                                    class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="5" class="px-6 py-10 text-center text-gray-500">
-                                    No legal pages found yet.
-                                </td>
-                            </tr>
-                        @endforelse
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                                No legal pages found yet.
+                            </td>
+                        </tr>
+
+
+                        <tr>
+                            <td class="px-6 py-4 font-semibold text-gray-900">Privacy Policy</td>
+                            <td class="px-6 py-4 text-gray-500">{{ $pages->key }}</td>
+                            <td class="px-6 py-4">
+                                @if($pages->published_at)
+                                    <span
+                                        class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+                                        Published
+                                    </span>
+                                @else
+                                    <span
+                                        class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-600 border border-gray-200">
+                                        Draft
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-gray-500">
+                                {{ $pages->editor?->name ?? '—' }}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{{ route('admin.legal.edit', $pages) }}"
+                                    class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                                No legal pages found yet.
+                            </td>
+                        </tr>
+
                     </tbody>
                 </table>
             </div>

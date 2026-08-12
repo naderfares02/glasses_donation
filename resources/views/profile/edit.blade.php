@@ -4,7 +4,6 @@
         {{-- Cropper CSS --}}
         <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
         <style>
-            /* تحسينات بسيطة للمودال */
             .cropper-view-box,
             .cropper-face {
                 border-radius: 9999px;
@@ -76,7 +75,6 @@
                         <span class="text-white text-xs font-semibold">Change</span>
                     </div>
 
-                    {{-- ✅ نفس منطق القديم: input hidden --}}
                     <input id="avatarInput" type="file" name="avatar" accept="image/*" class="hidden">
                 </label>
 
@@ -103,7 +101,6 @@
             @enderror
         </form>
 
-        {{-- ✅ Remove avatar form (خارج الفورم الأول) --}}
         @if(auth()->user()->avatar)
             <form action="{{ route('profile.avatar.destroy') }}" method="POST"
                   onsubmit="return confirm('Remove profile photo?');">
@@ -359,12 +356,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         hidden.value = dataUrl;
 
-        // ✅ تحديث preview فوراً حتى ما تشوف default
         const preview = document.getElementById('avatarPreview');
         if (preview?.tagName === 'IMG') {
             preview.src = dataUrl;
         } else if (preview) {
-            // لو كان div (حرف افتراضي) استبدله بصورة
             const img = document.createElement('img');
             img.id = 'avatarPreview';
             img.src = dataUrl;
@@ -375,11 +370,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         closeModal();
 
-        // ✅ نفس اللي طلبته: submit مباشر بعد القص
         form.submit();
     });
 
-    // ✅ منع إرسال فورم بدون قص إذا اختار ملف
     form.addEventListener('submit', (e) => {
         if (input.files?.length && !hidden.value) {
             e.preventDefault();

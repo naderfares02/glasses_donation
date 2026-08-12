@@ -23,7 +23,6 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role', ['donor', 'recipient', 'super_admin', 'admin'])->default('recipient');
 
-            // من add_admin_user_management_fields_to_users_table
             $table->enum('status', ['active', 'suspended'])->default('active');
             $table->timestamp('suspended_at')->nullable();
             $table->unsignedBigInteger('suspended_by')->nullable();

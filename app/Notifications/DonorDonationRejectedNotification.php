@@ -23,7 +23,6 @@ class DonorDonationRejectedNotification extends Notification
 
         $g = $this->donationRequest->glasses;
 
-        // سبب الرفض غالبًا محفوظ في admin_note
         $reason = $this->donationRequest->admin_note;
 
         return [

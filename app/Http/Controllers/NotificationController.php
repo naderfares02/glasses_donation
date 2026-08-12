@@ -8,7 +8,7 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $tab = $request->query('tab', 'unread'); // unread | all
+        $tab = $request->query('tab', 'unread'); 
 
         $user = $request->user();
 

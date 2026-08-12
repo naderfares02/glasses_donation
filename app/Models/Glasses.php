@@ -12,12 +12,6 @@ class Glasses extends Model
 {
     use HasFactory;
 
-    // لو جدولك فيه timestamps اتركها (Laravel الافتراضي true)
-    // public $timestamps = true;
-
-    /**
-     * Mass assignment
-     */
     protected $fillable = [
         'user_id',
         'serial_number',
@@ -50,7 +44,6 @@ class Glasses extends Model
         'pickup_city',
         'contact_method',
 
-        // (لو عندك هذا العمود فعلاً في جدول glasses)
         'active_contact_request_id',
     ];
 
@@ -62,9 +55,7 @@ class Glasses extends Model
         // 'updated_at' => 'datetime',
     ];
 
-    /**
-     * Enum-like options (اختياري يساعدك بالـ validation و الـ UI)
-     */
+
     public const CONDITIONS = ['new', 'used'];
 
     public const STATUSES = [
@@ -94,18 +85,12 @@ class Glasses extends Model
 
     public const CONTACT_METHODS = ['chat_only', 'phone', 'both'];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // Alias مفيد لو بتسميه donor بالـ views
     public function donor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -127,9 +112,6 @@ class Glasses extends Model
         return $this->hasMany(ContactRequest::class, 'glasses_id');
     }
 
-    /**
-     * لو عندك عمود active_contact_request_id على جدول glasses
-     */
     public function activeContactRequest(): BelongsTo
     {
         return $this->belongsTo(ContactRequest::class, 'active_contact_request_id');

@@ -18,7 +18,7 @@
                             {{ old('role') === 'donor' ? 'checked' : '' }} required>
                         <div
                             class="p-4 rounded-xl border bg-white hover:bg-gray-50 transition
-                                   peer-checked:border-blue-600 peer-checked:bg-blue-50">
+                                   peer-checked:border-[#35A899] peer-checked:bg-[#35A899]/10">
                             <p class="font-bold text-gray-800">Donor</p>
                             <p class="text-sm text-gray-600 mt-1">I want to donate glasses.</p>
                         </div>
@@ -29,7 +29,7 @@
                             {{ old('role') === 'recipient' ? 'checked' : '' }} required>
                         <div
                             class="p-4 rounded-xl border bg-white hover:bg-gray-50 transition
-                                   peer-checked:border-blue-600 peer-checked:bg-blue-50">
+                                   peer-checked:border-[#35A899] peer-checked:bg-[#35A899]/10">
                             <p class="font-bold text-gray-800">Recipient</p>
                             <p class="text-sm text-gray-600 mt-1">I want to request glasses.</p>
                         </div>
@@ -46,7 +46,7 @@
                 <label class="block text-sm font-semibold text-gray-700">Name</label>
                 <input name="name" type="text" value="{{ old('name') }}" required autofocus autocomplete="name"
                     class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm
-                           focus:ring-2 focus:ring-blue-200 focus:border-blue-600">
+                           focus:ring-2 focus:ring-[#35A899]/30 focus:border-[#35A899]">
                 @error('name') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
             </div>
 
@@ -55,7 +55,7 @@
                 <label class="block text-sm font-semibold text-gray-700">Email</label>
                 <input name="email" type="email" value="{{ old('email') }}" required autocomplete="username"
                     class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm
-                           focus:ring-2 focus:ring-blue-200 focus:border-blue-600"
+                           focus:ring-2 focus:ring-[#35A899]/30 focus:border-[#35A899]"
                            placeholder="you@example.com">
                 @error('email') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
             </div>
@@ -67,7 +67,7 @@
                     <input name="phone" type="text" value="{{ old('phone') }}" required
                         placeholder="+4915123456789" pattern="^\+49[0-9]{9,12}$"
                         class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm
-                               focus:ring-2 focus:ring-blue-200 focus:border-blue-600">
+                               focus:ring-2 focus:ring-[#35A899]/30 focus:border-[#35A899]">
                     <p class="text-xs text-gray-500 mt-1">Format: +49XXXXXXXXX</p>
                     @error('phone') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
                 </div>
@@ -76,7 +76,7 @@
                     <label class="block text-sm font-semibold text-gray-700">City</label>
                     <select name="city" required
                         class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm
-                               focus:ring-2 focus:ring-blue-200 focus:border-blue-600">
+                               focus:ring-2 focus:ring-[#35A899]/30 focus:border-[#35A899]">
                         <option value="" disabled {{ old('city') ? '' : 'selected' }}>Select city</option>
                         @php $cities=["Berlin","Hamburg","Munich","Cologne","Frankfurt","Stuttgart","Düsseldorf","Dortmund","Essen","Leipzig","Bremen","Dresden","Hanover","Nuremberg","Duisburg","Bochum","Wuppertal","Bielefeld","Bonn","Münster"]; @endphp
                         @foreach($cities as $city)
@@ -92,7 +92,7 @@
                 <label class="block text-sm font-semibold text-gray-700">Password</label>
                 <input name="password" type="password" required autocomplete="new-password"
                     class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm
-                           focus:ring-2 focus:ring-blue-200 focus:border-blue-600">
+                           focus:ring-2 focus:ring-[#35A899]/30 focus:border-[#35A899]">
                 @error('password') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
             </div>
 
@@ -101,7 +101,7 @@
                 <label class="block text-sm font-semibold text-gray-700">Confirm Password</label>
                 <input name="password_confirmation" type="password" required autocomplete="new-password"
                     class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm
-                           focus:ring-2 focus:ring-blue-200 focus:border-blue-600">
+                           focus:ring-2 focus:ring-[#35A899]/30 focus:border-[#35A899]">
                 @error('password_confirmation') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
             </div>
 
@@ -114,16 +114,16 @@
             value="1"
             {{ old('terms') ? 'checked' : '' }}
             required
-            class="mt-1 rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+            class="mt-1 rounded border-gray-300 text-[#35A899] shadow-sm focus:ring-[#35A899]/50"
         >
 
         <span class="text-sm text-gray-700 leading-relaxed">
             I agree to the
-            <a href="{{ route('terms') }}" target="_blank" class="font-semibold text-blue-700 hover:text-blue-800 underline">
+            <a href="{{ route('terms') }}" target="_blank" class="font-semibold text-[#35A899] hover:text-[#2c8f82] underline">
                 Terms of Use
             </a>
             and
-            <a href="{{ route('privacy') }}" target="_blank" class="font-semibold text-blue-700 hover:text-blue-800 underline">
+            <a href="{{ route('privacy') }}" target="_blank" class="font-semibold text-[#35A899] hover:text-[#2c8f82] underline">
                 Privacy Policy
             </a>.
         </span>
@@ -135,13 +135,13 @@
 </div>
 
             <div class="flex items-center justify-between mt-4">
-                <a class="font-semibold text-blue-700 hover:text-blue-800"
+                <a class="font-semibold text-[#35A899] hover:text-[#2c8f82]"
                    href="{{ route('login') }}">
                     Already registered?
                 </a>
 
                 <button type="submit"
-                    class="ms-3 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                    class="ms-3 px-6 py-2.5 rounded-xl bg-[#35A899] hover:bg-[#2c8f82] text-white font-semibold">
                     Register
                 </button>
             </div>

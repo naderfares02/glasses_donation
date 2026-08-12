@@ -15,7 +15,7 @@ new class extends Component {
     public function go(string $tab): void
     {
         $this->tab = $this->normalizeTab($tab);
-        $this->dispatch('admin-tab-changed', tab: $this->tab); // مهم
+        $this->dispatch('admin-tab-changed', tab: $this->tab); 
     }
 
     private function normalizeTab(string $tab): string

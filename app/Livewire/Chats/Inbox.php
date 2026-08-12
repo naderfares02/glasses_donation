@@ -64,7 +64,6 @@ class Inbox extends Component
 
         $this->activeConversationId = $id;
 
-        // علّم رسائل الطرف الآخر كمقروءة
         Message::where('conversation_id', $id)
             ->whereNull('read_at')
             ->where('sender_id', '!=', auth()->id())
@@ -99,15 +98,12 @@ public function send()
 
     $message = DB::transaction(function () use ($conversation, $body) {
 
-        // اقفل الصف لمنع تضارب
         $lockedConversation = Conversation::where('id', $conversation->id)
             ->lockForUpdate()
             ->first();
 
-        // عدد الرسائل قبل الإرسال
         $messagesCount = Message::where('conversation_id', $lockedConversation->id)->count();
 
-        // إنشاء الرسالة
         $message = Message::create([
             'conversation_id' => $lockedConversation->id,
             'sender_id'       => auth()->id(),
@@ -115,7 +111,6 @@ public function send()
         ]);
 
 
-// ✅ إذا المرسل هو الـ donor
         if (auth()->id() === $lockedConversation->donor_id && $lockedConversation->glasses_id) {
 
             $lockedConversation->glasses()
@@ -141,7 +136,6 @@ public function send()
 
     public function onMessageSent($payload)
     {
-        // فقط إعادة render
     }
 
     public function render()

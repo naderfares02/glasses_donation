@@ -17,7 +17,6 @@ return new class extends Migration
             $table->foreignId('sender_id')->constrained('users')->cascadeOnDelete();
 
             $table->text('body');
-            // من add_read_at_to_messages_table
             $table->timestamp('read_at')->nullable();
 
             $table->timestamps();

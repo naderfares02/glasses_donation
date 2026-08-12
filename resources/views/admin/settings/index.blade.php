@@ -144,7 +144,6 @@
 
                         <div class="p-5 space-y-3">
 
-                            {{-- ✅ IMPORTANT: hidden inputs لضمان إرسال 0 عند unchecked --}}
                             <input type="hidden" name="allow_registration" value="0">
                             <input type="hidden" name="require_phone_verification" value="0">
                             <input type="hidden" name="require_admin_approval_for_donated" value="0">

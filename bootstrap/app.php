@@ -25,8 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
     })
     ->withSchedule(function (Schedule $schedule): void {
-        // يشغّل كل يوم مرة، ويرسل تذكير بالإيميل لمن ترك حالة تأكيد الاستلام
-        // معلّقة (pending) لمدة 3 أيام أو أكثر بدون رد
+
         $schedule->command('delivery-confirmations:remind')->daily();
     })
     ->withExceptions(function (Exceptions $exceptions): void {

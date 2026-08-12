@@ -15,7 +15,6 @@ class SettingsSeeder extends Seeder
         $s->set('site.support_email', 'support@example.com', 'string');
         $s->set('site.maintenance', false, 'bool');
 
-        // صفحات السياسات كنص (HTML/Markdown) - أنت اختر
         $s->set('legal.terms_title', 'Terms & Conditions', 'string');
         $s->set('legal.terms_body', "Write your terms here...", 'text');
 

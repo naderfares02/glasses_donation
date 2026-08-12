@@ -20,7 +20,6 @@ class ComplaintController extends Controller
             403
         );
 
-        // ✅ منع فتح شكوى ثانية مفتوحة على نفس المحادثة من نفس المستخدم
         $hasOpenComplaint = Complaint::where('conversation_id', $conversation->id)
             ->where('reporter_id', auth()->id())
             ->whereIn('status', ['open', 'reviewing'])
@@ -51,7 +50,6 @@ class ComplaintController extends Controller
                 'status'           => 'open',
             ]);
 
-            // أول رسالة (اختياري): نخزن الوصف كرسالة لو بدك
             if (!empty($data['description'])) {
                 ComplaintMessage::create([
                     'complaint_id' => $complaint->id,
@@ -93,7 +91,6 @@ class ComplaintController extends Controller
         abort_if($complaint->reporter_id !== auth()->id(), 403);
         abort_if(in_array($complaint->status, ['resolved','dismissed'], true), 403);
 
-        // المستخدم يقدر يرسل بس إذا آخر رسالة كانت من الأدمن (أو ما في ولا رسالة بعد)
         $lastMessage = $complaint->messages()->reorder('id', 'desc')->first();
         $canUserSend = !$lastMessage || $lastMessage->sender_role === 'admin';
 
@@ -112,7 +109,6 @@ class ComplaintController extends Controller
             'body'         => $data['body'],
         ]);
 
-        // لو الأدمن كان بيراجعها، خليها open/أو خليها reviewing حسب منطقك
         if ($complaint->status !== 'open') {
             $complaint->update(['status' => 'open']);
         }
@@ -138,7 +134,6 @@ class ComplaintController extends Controller
     {
         abort_if($complaint->reporter_id !== auth()->id(), 403);
 
-        // المستخدم ما يغلقها "dismissed"، فقط "resolved" كطلب إغلاق
         if (!in_array($complaint->status, ['resolved','dismissed'], true)) {
             $complaint->update(['status' => 'resolved']);
         }

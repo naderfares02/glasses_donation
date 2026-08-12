@@ -19,7 +19,6 @@ class ComplaintMessageFromUserNotification extends Notification
 
     public function via($notifiable): array
     {
-        // يمكنك إضافة 'database' لو بدك إشعار داخل الموقع
         return ['mail', 'database'];
     }
 
@@ -54,7 +53,6 @@ class ComplaintMessageFromUserNotification extends Notification
 
     private function complaintUrl(): string
     {
-        // عدّل الراوت حسب مشروعك
         return route('admin.complaints.show', $this->complaint->id);
     }
 }

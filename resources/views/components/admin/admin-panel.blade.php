@@ -80,8 +80,7 @@ new class extends Component {
         {{-- Content --}}
         @if($tab === 'dashboard')
             @php
-                // لو عندك controller مرّر $stats = [...]
-                // لو مش موجود، بنعرض شرطات بدل الأرقام
+
                 $stats = $stats ?? [
                     'pending_donation_requests' => null,
                     'open_reports' => null,

@@ -46,19 +46,12 @@ public function index(SettingService $settings)
     {
         $settings->set('site.maintenance', true, 'bool');
 
-        // (اختياري) تنظيف كاش عشان الميدلوير يقرأ الإعداد فوراً
-        // Artisan::call('optimize:clear');
-
         return back()->with('success', 'Maintenance enabled.');
     }
 
     public function disableMaintenance(SettingService $settings)
     {
         $settings->set('site.maintenance', false, 'bool');
-
-        // (اختياري) تنظيف كاش
-        // Artisan::call('optimize:clear');
-
         return back()->with('success', 'Maintenance disabled.');
     }
 

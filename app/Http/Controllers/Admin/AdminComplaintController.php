@@ -155,7 +155,7 @@ class AdminComplaintController extends Controller
                 }
 
                 if (in_array($locked->status, ['resolved', 'dismissed'], true)) {
-                    return true; // كانت مغلقة أصلًا
+                    return true; 
                 }
 
                 $locked->update([

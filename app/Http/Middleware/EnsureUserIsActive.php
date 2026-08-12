@@ -14,7 +14,6 @@ public function handle($request, Closure $next)
 
     if ($user && $user->status === 'suspended') {
 
-        // خزّن البيانات في session قبل تسجيل الخروج
         session([
             'suspended_user' => [
                 'reason' => $user->suspended_reason,

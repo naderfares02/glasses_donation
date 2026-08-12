@@ -16,7 +16,7 @@ class RecipientDonationsController extends Controller
 {
     public function index(Request $request)
     {
-        $tab = $request->query('tab', 'pending'); // pending | received | not_received
+        $tab = $request->query('tab', 'pending'); 
 
         if (!in_array($tab, ['pending', 'received', 'not_received'])) {
             $tab = 'pending';
@@ -63,7 +63,6 @@ public function markReceived(Request $request, DeliveryConfirmation $confirmatio
         return back()->with('error', 'This request has already been resolved.');
     }
 
-    // الطلب الأصلي انحسم أصلاً من طرف الأدمن (رفض) — ما عاد له معنى يتفاعل معه المستفيد
     $confirmation->loadMissing('donationRequest');
     if ($confirmation->donationRequest?->status === 'rejected') {
         return back()->with('error', 'This donation request has already been closed by the admin.');
@@ -74,22 +73,17 @@ public function markReceived(Request $request, DeliveryConfirmation $confirmatio
     ]);
 
 
-
-    // 1) حدّث حالة التأكيد
     $confirmation->update([
         'status' => 'received',
         'recipient_note' => $data['recipient_note'] ?? null,
         'recipient_responded_at' => now(),
     ]);
 
-    // 2) جيب DonationRequest المرتبط (ضروري للإشعار)
-    $donationRequest = $confirmation->donationRequest; // لازم تكون العلاقة موجودة
+    $donationRequest = $confirmation->donationRequest; 
 
     if ($donationRequest) {
-        // 3) جيب الأدمنز
         $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
-
-        // 4) أرسل إشعار
+        
         Notification::send($admins, new AdminRecipientConfirmedDeliveryNotification($donationRequest));}
 
     return redirect()
@@ -106,7 +100,7 @@ public function markReceived(Request $request, DeliveryConfirmation $confirmatio
         }
 
         $data = $request->validate([
-            'recipient_note' => ['required', 'string', 'max:2000'], // خليها required عند الرفض
+            'recipient_note' => ['required', 'string', 'max:2000'],
         ]);
 
         $confirmation->update([

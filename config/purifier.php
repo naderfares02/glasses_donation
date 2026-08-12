@@ -25,8 +25,8 @@ return [
     'settings'      => [
         'default' => [
             'HTML.Doctype'             => 'HTML 4.01 Transitional',
-            'HTML.Allowed'             => 'div,b,strong,i,em,u,a[href|title],ul,ol,li,p[style],br,span[style],img[width|height|alt|src]',
-            'CSS.AllowedProperties'    => 'font,font-size,font-weight,font-style,font-family,text-decoration,padding-left,color,background-color,text-align',
+            'HTML.Allowed'             => 'h1[class|style],h2[class|style],h3[class|style],h4[class|style],h5[class|style],h6[class|style],div[class|style],section[class|style],header[class|style],footer[class|style],b,strong,i,em,u,a[href|title|class|style],ul[class|style],ol[class|style],li[class|style],p[class|style],br,hr,span[class|style],img[width|height|alt|src|class|style],table[class|style],thead,tbody,tr,th[class|style],td[class|style],blockquote[class|style]',
+            'CSS.AllowedProperties'    => 'font,font-size,font-weight,font-style,font-family,text-decoration,text-align,line-height,letter-spacing,padding,padding-left,padding-right,padding-top,padding-bottom,margin,margin-left,margin-right,margin-top,margin-bottom,color,background-color,background,border,border-radius,border-color,border-width,border-style,box-shadow,width,max-width,height,display,vertical-align',
             'AutoFormat.AutoParagraph' => true,
             'AutoFormat.RemoveEmpty'   => true,
         ],

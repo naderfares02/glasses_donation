@@ -17,7 +17,7 @@ class NewContactRequestNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database']; // فقط داخل الموقع
+        return ['database']; 
     }
 
     public function toDatabase($notifiable): array
@@ -29,7 +29,6 @@ class NewContactRequestNotification extends Notification
             'glasses_title' => $this->request->glasses?->title,
             'recipient_name' => $this->request->recipient?->name,
 
-            // ✅ الرابط الذي يفتح صفحة الطلبات لهذه النظارة عند المتبرع
             'url' => route('donor.requests.index', $this->request->glasses_id),
 
             'message' => 'New contact request from ' . ($this->request->recipient?->name ?? 'Someone')

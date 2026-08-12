@@ -10,7 +10,6 @@ class LegalPageRevision extends Model
 
     protected $fillable = [
         'legal_page_id',
-        'title',
         'content',
         'updated_by',
         'created_at',

@@ -16,7 +16,6 @@
 
     $extras = $glasses->images?->where('is_primary', false) ?? collect();
 
-    // ✅ عرض آمن بدون كسر قيم 0
     $val = fn($v) => ($v === null || $v === '') ? null : $v;
 
     // Titles
@@ -57,7 +56,6 @@
         'unknown' => 'Unknown',
     ];
 
-    // ✅ تجميع معلومات موجودة فقط (No empty cards)
     $quickFacts = collect([
         ['label' => 'Lens Type', 'value' => $lensTypes[$glasses->lens_type] ?? $val($glasses->lens_type)],
         ['label' => 'Vision Use', 'value' => $visionTypes[$glasses->vision_type] ?? $val($glasses->vision_type)],
@@ -116,7 +114,6 @@
                 </div>
             @endif
 
-            {{-- ✅ Top section (no empty columns) --}}
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
                 {{-- Main content --}}
@@ -191,7 +188,7 @@
                                 </div>
                             </div>
 
-                            {{-- ✅ Show thumbnails only if exist --}}
+                            {{--  Show thumbnails only if exist --}}
                             @if($extras->count())
                                 <div class="grid grid-cols-4 sm:grid-cols-6 gap-3">
                                     @foreach($extras as $img)
@@ -206,7 +203,7 @@
                         </div>
                     </div>
 
-                    {{-- ✅ Facts (only if there are facts) --}}
+                    {{--  Facts (only if there are facts) --}}
                     @if($quickFacts->count())
                         <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                             <div class="p-5 border-b bg-gray-50">
@@ -229,7 +226,7 @@
                         </div>
                     @endif
 
-                    {{-- ✅ Description only if exists --}}
+                    {{--  Description only if exists --}}
                     @if($hasDescription)
                         <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                             <div class="p-5 border-b bg-gray-50">
@@ -244,7 +241,7 @@
                         </div>
                     @endif
 
-                    {{-- ✅ Prescription only if any field exists --}}
+                    {{--  Prescription only if any field exists --}}
                     @if($prescriptionFields->count())
                         <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                             <div class="p-5 border-b bg-gray-50">
@@ -272,7 +269,7 @@
                 {{-- Sidebar CTA --}}
                 <div class="lg:col-span-4 space-y-6">
 
-                    {{-- ✅ Contact / action card (never empty) --}}
+                    {{--  Contact / action card (never empty) --}}
                     <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                         <div class="p-5 border-b bg-gray-50">
                             <p class="text-sm font-semibold text-gray-800">Get this item</p>
@@ -330,7 +327,7 @@
                         </div>
                     </div>
 
-                    {{-- ✅ Safety/Guidelines (never empty) --}}
+                    {{--  Safety/Guidelines (never empty) --}}
                     <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                         <div class="p-5 border-b bg-gray-50">
                             <p class="text-sm font-semibold text-gray-800">Tips</p>

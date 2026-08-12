@@ -26,7 +26,6 @@ class AdminRecipientConfirmedDeliveryNotification extends Notification
             'glasses_id'          => $g?->id,
             'glasses_title'       => $g?->title ?? 'Glasses',
             'message'             => 'Recipient confirmed receiving the glasses. Please review the donation request.',
-            // ✅ عدّل اسم الراوت إذا عندك مختلف
             'url'                 => route('admin.donation_requests.show', $this->donationRequest->id),
         ];
     }

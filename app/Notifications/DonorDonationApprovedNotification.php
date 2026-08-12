@@ -29,7 +29,6 @@ class DonorDonationApprovedNotification extends Notification
             'glasses_id'         => $g?->id,
             'glasses_title'      => $g?->title ?? 'Glasses',
             'message'            => 'Admin approved your donation request for "' . ($g?->title ?? 'glasses') . '".',
-            // لو عندك صفحة تفاصيل الطلب عند الأدمن/المتبرع غيّر الراوت
             'url'                => route('donor.chats.index', ['conversation' => $this->donationRequest->conversation_id]),
         ];
     }

@@ -11,8 +11,6 @@ return new class extends Migration {
         Schema::create('delivery_confirmations', function (Blueprint $table) {
             $table->id();
 
-            // من add_donation_request_id_to_delivery_confirmations_table
-            // (donation_requests يُنشأ قبل هذا الجدول، فلا مشكلة تبعية دائرية)
             $table->foreignId('donation_request_id')
                 ->constrained('donation_requests')
                 ->cascadeOnDelete();
@@ -23,10 +21,8 @@ return new class extends Migration {
             $table->foreignId('donor_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('recipient_id')->constrained('users')->cascadeOnDelete();
 
-            // الحالة: pending / received / not_received
             $table->enum('status', ['pending', 'received', 'not_received'])->default('pending');
 
-            // ملاحظات الطرفين (اختياري)
             $table->text('donor_note')->nullable();
             $table->text('recipient_note')->nullable();
 
@@ -34,10 +30,8 @@ return new class extends Migration {
 
             $table->timestamps();
 
-            // يمنع تكرار طلب تأكيد لنفس المحادثة
             $table->unique('conversation_id');
 
-            // يمنع تكرار تأكيد لنفس طلب التبرع
             $table->unique('donation_request_id');
         });
     }

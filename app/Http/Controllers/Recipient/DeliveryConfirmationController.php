@@ -1,6 +1,5 @@
 <?php
 
-// app/Http/Controllers/Recipient/DeliveryConfirmationController.php
 namespace App\Http\Controllers\Recipient;
 
 use App\Http\Controllers\Controller;
@@ -16,7 +15,6 @@ class DeliveryConfirmationController extends Controller
 {
     public function show(DeliveryConfirmation $confirmation)
     {
-        // أمان: فقط المستفيد صاحب الطلب
         abort_if($confirmation->recipient_id !== auth()->id(), 403);
 
         $confirmation->load([
@@ -33,8 +31,6 @@ public function confirmReceived(Request $request, DeliveryConfirmation $confirma
 {
     abort_if($confirmation->recipient_id !== auth()->id(), 403);
 
-    // يسمح بالتأكيد لو الحالة pending (أول مرة) أو not_received (رجع عن قراره)
-    // لكن لو صار received أصلاً (وربما اعتُمد التبرع)، ما نسمح بأي تعديل إضافي
     if (!in_array($confirmation->status, ['pending', 'not_received'], true)) {
         return back()->with('error', 'This request is already resolved.');
     }
@@ -50,13 +46,12 @@ public function confirmReceived(Request $request, DeliveryConfirmation $confirma
 
     DB::transaction(function () use ($confirmation, $data) {
         $confirmation->update([
-            'status' => 'received', // ✅ ليست received
+            'status' => 'received', 
             'recipient_note' => $data['recipient_note'] ?? null,
             'recipient_responded_at' => now(),
         ]);
     });
 
-    // ✅ أرسل بعد transaction
     $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
     Notification::send($admins, new AdminRecipientConfirmedDeliveryNotification($donationRequest));
 

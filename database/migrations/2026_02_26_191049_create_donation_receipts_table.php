@@ -23,9 +23,9 @@ return new class extends Migration
             $table->date('delivered_date')->nullable();
             $table->text('admin_note')->nullable();
 
-            $table->string('receipt_code')->unique();     // مثل RCPT-XXXX
-            $table->string('pdf_path')->nullable();       // storage path
-            $table->timestamp('issued_at')->nullable();   // وقت إصدار الإيصال
+            $table->string('receipt_code')->unique();    
+            $table->string('pdf_path')->nullable();       
+            $table->timestamp('issued_at')->nullable();   
 
             $table->timestamps();
         });

@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-    <!-- Cropper (اختياري) -->
+    <!-- Cropper  -->
     <link rel="stylesheet" href="https://unpkg.com/cropperjs/dist/cropper.min.css">
     <script src="https://unpkg.com/cropperjs/dist/cropper.min.js" defer></script>
 
@@ -42,10 +42,8 @@
         </main>
     </div>
 
-    {{-- ✅ Livewire Scripts (لازم تكون قبل إغلاق body) --}}
     @livewireScripts
 
-    {{-- stacks (لازم داخل body) --}}
     @stack('scripts')
 </body>
 

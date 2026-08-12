@@ -16,11 +16,7 @@
                     ← Back
                 </a>
 
-                {{-- لو عندك صفحة تفاصيل النظارة للأدمن (اختياري) --}}
-                {{-- <a href="{{ route('admin.glasses.show', $conversation->glasses_id) }}"
-                    class="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-900 hover:bg-gray-800 text-white">
-                    View Glasses
-                </a> --}}
+
             </div>
         </div>
     </x-slot>
@@ -28,7 +24,6 @@
     <div class="py-10">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            {{-- Top Info Card --}}
             <div class="bg-white border rounded-2xl shadow-sm p-6">
                 <div class="flex flex-col md:flex-row gap-6 md:items-center md:justify-between">
 
@@ -58,7 +53,6 @@
                     <div class="flex items-center gap-3">
                         <div class="flex items-center gap-3">
 
-                            {{-- Status badge --}}
                             <span class="text-xs font-semibold px-3 py-1 rounded-full border
         {{ $conversation->status === 'open'
     ? 'bg-green-50 text-green-700 border-green-200'
@@ -66,7 +60,6 @@
                                 {{ strtoupper($conversation->status) }}
                             </span>
 
-                            {{-- Admin toggle button --}}
                             @if(auth()->user()->role === 'admin' || auth()->user()->role === 'super_admin')
                                                     <form method="POST" action="{{ route('admin.conversations.toggle', $conversation->id) }}">
                                                         @csrf
@@ -82,7 +75,6 @@
 
                         </div>
 
-                        {{-- Badge لمساعدة الأدمن --}}
                         <span
                             class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                             Admin view (read-only)
@@ -92,12 +84,10 @@
                 </div>
             </div>
 
-            {{-- Participants --}}
             <div class="bg-white border rounded-2xl shadow-sm p-6">
                 <p class="text-sm font-semibold text-gray-800 mb-4">Participants</p>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {{-- Donor --}}
                     <div class="border rounded-2xl p-4 bg-gray-50">
                         <p class="text-xs font-semibold text-gray-500 mb-3">DONOR</p>
                         <div class="flex items-center gap-3">
@@ -123,7 +113,6 @@
                         </div>
                     </div>
 
-                    {{-- Recipient --}}
                     <div class="border rounded-2xl p-4 bg-gray-50">
                         <p class="text-xs font-semibold text-gray-500 mb-3">RECIPIENT</p>
                         <div class="flex items-center gap-3">
@@ -151,9 +140,7 @@
                 </div>
             </div>
 
-            {{-- Messages --}}
             <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
-                {{-- Header ثابت --}}
                 <div class="p-5 border-b bg-gray-50 flex items-center justify-between">
                     <p class="text-sm font-semibold text-gray-800">Messages</p>
                     <p class="text-xs text-gray-500">
@@ -161,9 +148,8 @@
                     </p>
                 </div>
 
-                {{-- Wrapper: ارتفاع ثابت + Flex --}}
                 <div class="flex flex-col" style="height: 70vh;">
-                    {{-- Body: هذا هو اللي فيه scroll --}}
+
                     <div class="flex-1 overflow-y-auto p-5 space-y-3 bg-white">
                         @forelse($messages as $m)
                             @php
@@ -195,7 +181,6 @@
                         @endforelse
                     </div>
 
-                    {{-- Footer ثابت --}}
                     <div class="p-5 border-t bg-gray-50">
                         <div class="text-sm text-gray-600">
                             This is a <span class="font-semibold">read-only</span> view for admins.

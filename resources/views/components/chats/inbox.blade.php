@@ -209,7 +209,6 @@
                                                 @enderror
                                             </div>
 
-                                            {{-- ✅ هذه هي الرسالة التي ستذهب إلى complaint_messages --}}
                                             <div>
                                                 <label class="block text-sm font-semibold text-gray-700 mb-1">Message</label>
                                                 <textarea name="body" rows="5" required maxlength="3000"

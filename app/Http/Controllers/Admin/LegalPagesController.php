@@ -22,23 +22,20 @@ class LegalPagesController extends Controller
         public function update(Request $request, LegalPage $page)
     {
         $data = $request->validate([
-            'title' => ['required','string','max:255'],
             'content' => ['required','string'],
             'publish' => ['nullable','boolean'],
         ]);
 
-        // احفظ النسخة الحالية كأرشيف قبل ما نكتب فوقها
+       
         \App\Models\LegalPageRevision::create([
             'legal_page_id' => $page->id,
-            'title'         => $page->title,
             'content'       => $page->content,
             'updated_by'    => $page->updated_by,
             'created_at'    => $page->updated_at ?? now(),
         ]);
 
         $page->update([
-            'title' => $data['title'],
-            'content' => clean($data['content']), // مع إصلاح XSS من الرد السابق
+            'content' => clean($data['content']), 
             'updated_by' => auth()->id(),
             'published_at' => ($request->boolean('publish')) ? now() : $page->published_at,
         ]);

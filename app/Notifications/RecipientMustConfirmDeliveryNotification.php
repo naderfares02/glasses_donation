@@ -29,7 +29,6 @@ class RecipientMustConfirmDeliveryNotification extends Notification
             'glasses_id'      => $g?->id,
             'glasses_title'   => $g?->title ?? 'Glasses',
 
-            // 🔹 هنا التعديل: اسم النظارة داخل نص الإشعار
             'message' => 'Please confirm if you received "' . ($g?->title ?? 'these glasses') . '".',
 
             'url' => route('recipient.confirmations.show', $this->confirmation->id),

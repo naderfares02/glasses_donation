@@ -18,12 +18,12 @@ public function index(Request $request)
     $q       = $request->query('q', '');
     $role    = $request->query('role', 'all');
     $status  = $request->query('status', 'all');
-    $deleted = $request->query('deleted', 'all'); // all | 1 | 0
+    $deleted = $request->query('deleted', 'all'); 
 
     $query = User::query()
         ->withTrashed()
-        ->where('id', '!=', auth()->id())          // لا تعرض الحالي
-        ->where('role', '!=', 'super_admin');      // ✅ اخفاء super_admin
+        ->where('id', '!=', auth()->id())        
+        ->where('role', '!=', 'super_admin');     
 
     if (auth()->user()->role === 'admin') {
         $query->whereNotIn('role', ['admin', 'super_admin']);
@@ -37,24 +37,22 @@ public function index(Request $request)
         });
     }
 
-    // Role filter (بدون super_admin)
+
     if ($role !== 'all' && in_array($role, ['admin', 'donor', 'recipient'], true)) {
         $query->where('role', $role);
     }
 
-    // Status filter (DB: active / suspended)
     if ($status !== 'all' && in_array($status, ['active', 'suspended'], true)) {
         $query->where('status', $status);
     }
 
-    // Deleted filter
+
     if ($deleted === '1') {
         $query->onlyTrashed();
     } elseif ($deleted === '0') {
         $query->whereNull('deleted_at');
     }
 
-    // ترتيب حسب الدور (CASE بدل FIELD() عشان يشتغل على SQLite بالتستات كمان)
     $query->orderByRaw("
         CASE role
             WHEN 'admin' THEN 1
@@ -67,7 +65,7 @@ public function index(Request $request)
 
     $users = $query->paginate(12)->withQueryString();
 
-    // Counts
+
     $countsRow = User::withTrashed()
         ->selectRaw("
             SUM(role='donor') as donors,
@@ -97,20 +95,13 @@ public function show(User $user)
 {
     $user->loadMissing(['suspendedBy:id,name', 'roleChangedBy:id,name']);
 
-    // Base queries
+
     $convQuery = Conversation::query()
         ->where(function ($q) use ($user) {
             $q->where('donor_id', $user->id)
               ->orWhere('recipient_id', $user->id);
         });
 
-    // $hasAnyConversations = (clone $convQuery)->exists();
-
-    // $hasOpenConversations = (clone $convQuery)
-    //     ->where('status', 'open')
-    //     ->exists();
-
-// Stats حسب الدور
 $stats = [];
 
 if ($user->role === 'donor') {
@@ -118,10 +109,8 @@ if ($user->role === 'donor') {
     $stats = [
         'conversations' => (clone $convQuery)->count(),
 
-        // الطلبات التي استلمها كمتبرع فقط
         'contact_requests' => ContactRequest::where('donor_id', $user->id)->count(),
 
-        // تقسيم حالات طلبات التبرع
         'donations_pending' => DonationRequest::where('donor_id', $user->id)
             ->where('status', 'pending')
             ->count(),
@@ -134,7 +123,6 @@ if ($user->role === 'donor') {
             ->where('status', 'approved')
             ->count(),
 
-        // عدد النظارات التي نشرها
         'glasses_posted' => Glasses::where('user_id', $user->id)->count(),
     ];
 }
@@ -147,7 +135,6 @@ elseif ($user->role === 'recipient') {
     ];
 }
 else {
-    // admin / super_admin
     $stats = [
         'conversations' => (clone $convQuery)->count(),
     ];
@@ -156,8 +143,6 @@ else {
     return view('admin.users.show', compact(
         'user',
         'stats',
-        // 'hasOpenConversations',
-        // 'hasAnyConversations'
     ));
 }
 
@@ -202,14 +187,12 @@ public function openClosedConversations(User $user)
 
     public function suspend(Request $request, User $user)
     {
-        // ممنوع الأدمن يوقف نفسه
         abort_if($user->id === auth()->id(), 403);
 
         $data = $request->validate([
             'reason' => ['required','string','max:255'],
         ]);
 
-        // super_admin فقط يستطيع توقيف admin/super_admin
         if (in_array($user->role, ['admin','super_admin']) && auth()->user()->role !== 'super_admin') {
             abort(403);
         }
@@ -249,7 +232,6 @@ public function openClosedConversations(User $user)
             'role' => ['required','in:donor,recipient,admin,super_admin'],
         ]);
 
-        // منع تغيير الدور طالما فيه عمليات نشطة معلّقة تحتاج صلاحية الدور الحالي
         $hasActiveGlasses = Glasses::where('user_id', $user->id)
             ->whereNotIn('status', ['available', 'donated'])
             ->exists();
@@ -286,10 +268,9 @@ public function openClosedConversations(User $user)
         abort_if($user->id === auth()->id(), 403);
 
         DB::transaction(function () use ($user) {
-            // سحب أي نظارات لسا متاحة أو محجوزة (بدون فتح تعارض مع دورات تبرع approved/donated موثّقة)
             Glasses::where('user_id', $user->id)
                 ->whereIn('status', ['available', 'reserved', 'in_contact'])
-                ->update(['status' => 'donated']); // أو حالة "withdrawn" مخصصة لو حبيت تضيفها لاحقًا
+                ->update(['status' => 'donated']);
 
             $user->delete();
         });
@@ -309,7 +290,6 @@ public function openClosedConversations(User $user)
 
     public function closeOpenConversations(User $user)
     {
-        // super_admin فقط (لأنه إجراء قوي)
         abort_if(auth()->user()->role !== 'super_admin', 403);
 
         DB::transaction(function () use ($user) {

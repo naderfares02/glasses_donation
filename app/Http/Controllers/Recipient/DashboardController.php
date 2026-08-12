@@ -21,18 +21,6 @@ class DashboardController extends Controller
             ])
             ->where('status', 'available');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Search
-        |--------------------------------------------------------------------------
-        | Search by:
-        | - Glasses title
-        | - Reference number
-        | - Brand
-        |--------------------------------------------------------------------------
-        */
-
         if ($q !== '') {
 
     $glasses->where(function ($query) use ($q) {
@@ -49,12 +37,6 @@ class DashboardController extends Controller
 }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Condition Filter
-        |--------------------------------------------------------------------------
-        */
-
         if (
             $condition !== '' &&
             in_array($condition, ['new', 'used'], true)
@@ -64,23 +46,11 @@ class DashboardController extends Controller
 
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Lens Type Filter
-        |--------------------------------------------------------------------------
-        */
         
         if ($lensType !== '' && in_array($lensType, \App\Models\Glasses::LENS_TYPES, true)) {
             $glasses->where('lens_type', $lensType);
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Pagination
-        |--------------------------------------------------------------------------
-        */
 
         $glasses = $glasses
             ->latest()

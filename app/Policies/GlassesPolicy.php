@@ -8,9 +8,7 @@ use App\Models\User;
 
 class GlassesPolicy
 {
-    /**
-     * صاحب النظارة فقط يقدر يشوف/يعدّل/يحذف تفاصيلها من لوحة المتبرع.
-     */
+
     public function view(User $user, Glasses $glasses): bool
     {
         return $glasses->user_id === $user->id;

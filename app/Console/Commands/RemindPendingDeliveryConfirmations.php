@@ -8,7 +8,6 @@ use Illuminate\Console\Command;
 
 class RemindPendingDeliveryConfirmations extends Command
 {
-    // اسم الأمر: php artisan delivery-confirmations:remind
     protected $signature = 'delivery-confirmations:remind {--days=3 : عدد الأيام قبل إرسال التذكير}';
 
     protected $description = 'Send an email reminder to recipients who left their delivery confirmation pending for N days';

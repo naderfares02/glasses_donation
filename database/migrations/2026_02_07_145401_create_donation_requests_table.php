@@ -28,8 +28,7 @@ return new class extends Migration {
             $table->timestamps();
 
             $table->unique(['glasses_id','status']); 
-            // ملاحظة: هذه تجعل فقط "pending/approved/rejected" واحدة لكل نظارة لكل حالة
-            // إذا سببت لك مشاكل لاحقًا، نعدّلها.
+
         });
     }
 

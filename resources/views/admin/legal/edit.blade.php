@@ -26,13 +26,6 @@
 
                 <div class="bg-white border rounded-2xl shadow-sm p-6 space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Title</label>
-                        <input name="title" value="{{ old('title', $page->title) }}"
-                            class="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-200">
-                        @error('title') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             Content (HTML)
                         </label>
@@ -44,7 +37,8 @@
                         @error('content') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
 
                         <p class="text-xs text-gray-500 mt-2">
-                            Tip: Use simple tags like &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt; for clean layout.
+                            Tip: Include your own heading inside the content (e.g. &lt;header class="page-head"&gt;&lt;h1&gt;...&lt;/h1&gt;&lt;/header&gt;) —
+                            the page no longer shows a separate title bar, so the heading must be part of your HTML.
                         </p>
                     </div>
 

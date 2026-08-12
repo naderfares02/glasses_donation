@@ -25,7 +25,6 @@
             </div>
 
             <div class="flex items-center gap-3">
-                {{-- زر يفتح المحادثة --}}
                 @if($donationRequest->conversation_id)
                     <a href="{{ route('admin.conversations.show', $donationRequest->conversation_id)}}"
                         class="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-900 hover:bg-gray-800 text-white">
@@ -173,7 +172,6 @@
                             @endif
                         </div>
 
-                        {{-- سجل التجاوز (إن وجد) --}}
                         @if($confirmation && $confirmation->overridden_by)
                             <div class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-xl">
                                 <p class="text-xs font-semibold text-purple-800 mb-1">
@@ -184,7 +182,6 @@
                                 </p>
                             </div>
                         @endif
-                        {{-- آخر ملاحظة أدمن (إن وجدت) --}}
                         @if($donationRequest->admin_note)
                             <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                                 <p class="text-xs font-semibold text-blue-700 mb-1">Last admin note</p>
@@ -201,7 +198,6 @@
                 <p class="text-sm font-semibold text-gray-800 mb-4">Decision</p>
 
                 @if($confirmation && $confirmation->status === 'not_received')
-                    {{-- المستفيد أنكر الاستلام: Approve/Reject غير مجدي هون، فقط التجاوز الإداري --}}
                     <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                         <p class="text-xs font-semibold text-amber-800 mb-2">
                             Admin override (use only if you have verified the recipient actually received the item — e.g.
@@ -223,7 +219,6 @@
                     </div>
                 @else
 
-                    {{-- إذا Approved: نقفل الإجراءات (اختياري) --}}
                     @if($donationRequest->status === 'approved')
                         <div class="p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 text-sm">
                             This request is already approved.
@@ -239,7 +234,6 @@
                         </div>
                     @endif
 
-                    {{-- APPROVE (مسموح حتى لو كانت Rejected) --}}
                     <form method="POST" action="{{ route('admin.donation_requests.approve', $donationRequest->id) }}"
                         class="flex flex-col md:flex-row gap-3 md:items-end">
                         @csrf
@@ -260,7 +254,6 @@
                         </button>
                     </form>
 
-                    {{-- REJECT (لو Pending فقط، أو حتى لو تريد تسمح بإعادة الرفض) --}}
                     <div class="mt-4 border-t pt-4">
                         <form method="POST" action="{{ route('admin.donation_requests.reject', $donationRequest->id) }}"
                             class="flex flex-col md:flex-row gap-3 md:items-end">

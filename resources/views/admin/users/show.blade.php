@@ -91,7 +91,6 @@
 
                             {{-- Quick actions --}}
                             <div class="flex flex-wrap gap-2">
-                                {{-- View conversations (اختياري: إذا عندك راوت) --}}
                                 {{-- <a href="{{ route('admin.users.conversations', $user->id) }}"
                                     class="px-4 py-2 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold text-gray-800">
                                     View Conversations
@@ -184,7 +183,6 @@
                         <div class="flex items-start justify-between gap-3">
                             <p class="text-xs text-gray-500">Donation Requests</p>
 
-                            {{-- total (اختياري) --}}
                             <span class="text-[11px] font-semibold text-gray-600">
                                 Total:
                                 {{ ($stats['donations_pending'] ?? 0) + ($stats['donations_rejected'] ?? 0) + ($stats['donations_approved'] ?? 0) }}

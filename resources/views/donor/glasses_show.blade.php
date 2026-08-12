@@ -16,7 +16,6 @@
 
     $extras = $glasses->images?->where('is_primary', false) ?? collect();
 
-    // عناوين جاهزة بدل القيم الخام
     $lensTypes = [
         'single_vision' => 'Single Vision',
         'bifocal' => 'Bifocal',
@@ -262,19 +261,16 @@
                             </div>
                         </div>
 
-                        {{-- Primary CTA (حسب الحالة) --}}
                         <div class="rounded-2xl border bg-white p-5">
                             <p class="text-sm font-semibold text-gray-800">Actions</p>
 
                             <div class="mt-4 space-y-2">
                                 @if(in_array($status, ['available', 'reserved', 'in_contact']))
-                                    {{-- زر: مثال فقط - عدّله حسب routes عندك --}}
                                     <a href="{{ route('donor.chats.index') }}"
                                         class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold">
                                         Open Chats
                                     </a>
 
-                                    {{-- مثال: mark donated (لو عندك route) --}}
                                     {{-- <a href="{{ route('donor.glasses.mark-donated.form', $glasses->id) }}"
                                         class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
                                         Confirm Donation

@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('glasses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // المتبرع
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); 
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('condition', ['new','used']);
-            // القيمة النهائية بعد دمج alter_glasses_status_enum + alter_glasses_status_enum_add_pending_donation
+            
             $table->enum('status', ['available','in_contact','pending_donation','donated','reserved'])->default('available');
             $table->string('serial_number')->nullable()->unique();
 
@@ -39,9 +39,6 @@ return new class extends Migration
             $table->string('pickup_city')->nullable();
             $table->string('contact_method')->nullable(); // chat_only/phone/both
 
-            // ملاحظة: الـ FK على هذا العمود يُضاف لاحقًا في
-            // add_active_contact_request_fk_to_glasses.php لأن جدول
-            // contact_requests لم يُنشأ بعد في هذه اللحظة (تبعية دائرية).
             $table->unsignedBigInteger('active_contact_request_id')->nullable();
 
             $table->timestamps();

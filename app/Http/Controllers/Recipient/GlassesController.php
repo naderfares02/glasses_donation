@@ -9,8 +9,6 @@ class GlassesController extends Controller
 {
     public function show(Glasses $glasses)
     {
-        // النظارة إما متاحة للتصفح العام، أو المستفيد نفسه طرف فعلي فيها
-        // (عنده طلب تواصل أو طلب تبرع مرتبط فيها) — غير هيك ممنوع.
         $recipientId = auth()->id();
 
         $isAvailable = $glasses->status === 'available';

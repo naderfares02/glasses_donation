@@ -73,7 +73,6 @@
                         @php
                             $data = $n->data ?? [];
 
-                            // ✅ دعم النظام القديم + الجديد
                             $title = $data['title']
                                 ?? $data['glasses_title']
                                 ?? 'Notification';
@@ -88,7 +87,6 @@
                             $isUnread = is_null($n->read_at);
                         @endphp
 
-                        {{-- إذا فيه رابط: خلي الضغط يودّي عليه + يعلّم كمقروء --}}
                         <form method="POST" action="{{ route('notifications.read', $n->id) }}" class="w-full">
                             @csrf
 

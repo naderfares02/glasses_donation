@@ -27,7 +27,6 @@ class RecipientContactRequestController extends Controller
         ->orderByDesc('created_at')
         ->get();
 
-    // جلب الـ glasses_ids التي تم التبرع بها للمستخدم الحالي
     $donatedGlassesIds = DonationReceipt::where('recipient_id', auth()->id())
         ->pluck('glasses_id')
         ->toArray();

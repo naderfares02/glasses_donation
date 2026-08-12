@@ -13,7 +13,6 @@ class DashboardController extends Controller
     {
         $userId = auth()->id();
 
-        // نظارات المتبرع
         $glassesQuery = Glasses::where('user_id', $userId);
 
         $stats = [
@@ -24,10 +23,8 @@ class DashboardController extends Controller
             'pending_donation'=> (clone $glassesQuery)->where('status', 'pending_donation')->count(),
             'donated'         => (clone $glassesQuery)->where('status', 'donated')->count(),
 
-            // محادثات المتبرع
             'conversations_open' => Conversation::where('donor_id', $userId)->where('status', 'open')->count(),
 
-            // طلبات التبرع الخاصة بالمتبرع (لو عندك statuses: pending/approved/rejected)
             'donation_requests_pending'  => DonationRequest::where('donor_id', $userId)->where('status', 'pending')->count(),
             'donation_requests_approved' => DonationRequest::where('donor_id', $userId)->where('status', 'approved')->count(),
             'donation_requests_rejected' => DonationRequest::where('donor_id', $userId)->where('status', 'rejected')->count(),

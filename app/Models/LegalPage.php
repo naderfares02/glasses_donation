@@ -10,7 +10,7 @@ class LegalPage extends Model
     use HasFactory;
 
     protected $fillable = [
-        'key','title','content','updated_by','published_at'
+        'key','content','updated_by','published_at'
     ];
     protected $casts = [
         'published_at' => 'datetime',

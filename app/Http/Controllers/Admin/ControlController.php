@@ -27,7 +27,7 @@ class ControlController extends Controller
     $counts = [
         'admins'            => User::whereIn('role', ['admin','super_admin'])->count(),
         'pending_donations' => \App\Models\DonationRequest::where('status', 'pending')->count(),
-        'suspended'         => User::where('status', 'suspended')->count(), // ✅ حسب DB عندك
+        'suspended'         => User::where('status', 'suspended')->count(), 
     ];
 
     return view('admin.control.index', compact('isSuperAdmin', 'legal', 'counts', 'isDown'));

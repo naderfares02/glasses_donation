@@ -9,9 +9,8 @@ return new class extends Migration {
     {
         Schema::create('legal_pages', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique(); // terms | privacy
-            $table->string('title');
-            $table->longText('content'); // HTML أو نص عادي
+            $table->string('key')->unique(); 
+            $table->longText('content');
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamp('published_at')->nullable();
             $table->timestamps();

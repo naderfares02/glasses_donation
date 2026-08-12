@@ -65,7 +65,7 @@ class DonationRequestController extends Controller
             'donor:id,name,email,avatar',
             'recipient:id,name,email,avatar',
             'deliveryConfirmation',
-            // 'conversation.messages.sender', // إذا بدك تعرض جزء من المحادثة هنا
+           
         ]);
 
         return view('admin.donation_requests.show', compact('donationRequest'));
@@ -94,7 +94,7 @@ class DonationRequestController extends Controller
         try {
             $receipt = DB::transaction(function () use ($donationRequest, $data) {
 
-                // ✅ قفل الصف وإعادة التحقق من الحالة جوا الـ transaction
+              
                 $locked = DonationRequest::whereKey($donationRequest->id)
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -107,7 +107,7 @@ class DonationRequestController extends Controller
                     throw new \RuntimeException('RECEIPT_EXISTS');
                 }
 
-                // 1) اعتماد الطلب — ما لازم تنسى هاي الخطوة!
+                
                 $locked->update([
                     'status' => 'approved',
                     'admin_note' => $data['admin_note'] ?? null,
@@ -115,17 +115,17 @@ class DonationRequestController extends Controller
                     'reviewed_by' => auth()->id(),
                 ]);
 
-                // 2) تحديث النظارة
+                
                 if ($locked->glasses) {
                     $locked->glasses->update(['status' => 'donated']);
                 }
 
-                // 3) إقفال طلبات التواصل المرتبطة
+                
                 ContactRequest::where('glasses_id', $locked->glasses_id)
                     ->whereIn('status', ['pending', 'accepted', 'on_hold'])
                     ->update(['status' => 'closed']);
 
-                // 4) إنشاء الإيصال — استخدم $locked مش $donationRequest
+                
                 $receipt = DonationReceipt::create([
                     'donation_request_id' => $locked->id,
                     'glasses_id' => $locked->glasses_id,
@@ -157,11 +157,10 @@ class DonationRequestController extends Controller
             ])->setPaper('a4');
 
             $path = "receipts/{$receipt->receipt_code}.pdf";
-            Storage::disk('local')->put($path, $pdf->output()); // local بدل public (راجع ملاحظة القرص العام بالرد السابق)
+            Storage::disk('local')->put($path, $pdf->output()); 
             $receipt->update(['pdf_path' => $path]);
         } catch (\Throwable $e) {
-            report($e); // سجل الخطأ بالـ logs، ما توقف تنفيذ الطلب
-
+            report($e); 
             return redirect()
                 ->route('admin.receipts.show', $receipt->id)
                 ->with('warning', 'Donation was approved, but the PDF receipt could not be generated. Please retry generating it.');
@@ -172,7 +171,7 @@ class DonationRequestController extends Controller
         try {
             $donationRequest->donor?->notify(new DonorDonationApprovedNotification($donationRequest));
         } catch (\Throwable $e) {
-            report($e); // فشل الإشعار ما لازم يفشّل كل العملية
+            report($e); 
         }
 
         return redirect()
@@ -181,12 +180,6 @@ class DonationRequestController extends Controller
     }
 
 
-
-    /**
-     * تجاوز إداري: تحويل حالة تأكيد الاستلام من "لم يستلم" إلى "استلم"
-     * يُستخدم فقط عندما يكون الأدمن متأكداً (عبر الشكوى/التواصل) أن المستفيد
-     * استلم فعلياً رغم أنه أنكر ذلك. يُسجَّل من قام بالتجاوز والسبب إلزامياً.
-     */
         public function overrideConfirmation(Request $request, DonationRequest $donationRequest)
     {
         $this->ensureAdmin();
@@ -252,8 +245,7 @@ class DonationRequestController extends Controller
         try {
             DB::transaction(function () use ($donationRequest, $data) {
 
-                // ✅ قفل الصف وإعادة التحقق من الحالة جوا الـ transaction
-                // (يمنع تعارض approve/reject لنفس الطلب بنفس اللحظة)
+               
                 $locked = DonationRequest::whereKey($donationRequest->id)
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -272,19 +264,13 @@ class DonationRequestController extends Controller
                 $confirmation = $locked->deliveryConfirmation;
 
                 if ($confirmation && $confirmation->status === 'received') {
-                    // المستفيد استلم النظارة فعلياً بإيده قبل ما يرفض الأدمن الطلب.
-                    // ما نرجعها "available" لأنها مش فاضية فعلياً — منستخدم حالة
-                    // "reserved" الموجودة أصلاً عشان تختفي من قائمة المتاح للجمهور
-                    // وتضل بحاجة متابعة يدوية من الأدمن مع المستفيد، بدل ما يقدر
-                    // مستفيد تاني يطلبها ويوعد فيها وهي أصلاً بحوزة حدا.
+                  
                     $locked->glasses->update([
                         'status' => 'reserved',
                     ]);
-                    // ملاحظة: ما بنلغي active_contact_request_id ولا نرجّع طلبات
-                    // on_hold لـ pending هون، لأن النظارة لسا "محجوزة" فعلياً على
-                    // نفس المستفيد لحد ما الأدمن يتابع الموضوع يدوياً ويقرر.
+                   
                 } else {
-                    // ما في استلام فعلي — آمن نرجعها متاحة للجمهور من جديد
+                   
                     $locked->glasses->update([
                         'status' => 'available',
                         'active_contact_request_id' => null,

@@ -9,9 +9,9 @@ return new class extends Migration {
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique();               // مثال: site.name
-            $table->json('value')->nullable();             // نخزن أي نوع
-            $table->string('type')->default('string');     // string|bool|int|json|text
+            $table->string('key')->unique();              
+            $table->json('value')->nullable();            
+            $table->string('type')->default('string');    
             $table->timestamps();
         });
     }

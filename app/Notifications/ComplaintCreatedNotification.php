@@ -14,7 +14,7 @@ class ComplaintCreatedNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database']; // حالياً داخل النظام فقط
+        return ['database']; 
     }
 
     public function toDatabase($notifiable): array

@@ -31,8 +31,8 @@
                             'role' => $key !== 'all' ? $key : null,
                             'status' => request('status') !== 'all' ? request('status') : null,
                             'q' => request('q') ?: null,
-                            'deleted' => request('deleted'), // إذا عندك فلتر deleted
-                            'sort' => request('sort'),    // إذا عندك sort
+                            'deleted' => request('deleted'), 
+                            'sort' => request('sort'),   
                         ], fn($v) => !is_null($v) && $v !== ''));
                     @endphp
 
@@ -232,7 +232,6 @@
                                                         @if($u->status === 'active')
                                                             <div x-data="{ openSuspend: false }" class="relative">
 
-                                                                {{-- زر Suspend --}}
                                                                 <button type="button" @click="openSuspend = true"
                                                                     class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 text-red-600">
                                                                     Suspend
@@ -242,11 +241,9 @@
                                                                 <div x-show="openSuspend" x-transition
                                                                     class="fixed inset-0 z-50 flex items-center justify-center">
 
-                                                                    {{-- الخلفية --}}
                                                                     <div class="absolute inset-0 bg-black/40"
                                                                         @click="openSuspend = false"></div>
 
-                                                                    {{-- الصندوق --}}
                                                                     <div
                                                                         class="relative bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
 
@@ -336,13 +333,12 @@
             return {
                 open: false,
                 style: '',
-                gap: 6, // المسافة بين الزر والقائمة
+                gap: 6, 
 
                 toggle() {
                     this.open = !this.open;
                     if (this.open) {
                         this.$nextTick(() => {
-                            // انتظر frame عشان x-show يظهرها فعلاً ونقدر نقيسها
                             requestAnimationFrame(() => this.reposition());
                         });
                     }
@@ -356,19 +352,15 @@
 
                     const r = btn.getBoundingClientRect();
 
-                    // قياس الحجم الحقيقي للقائمة
                     const menuEl = this.$refs.menu;
                     const menuW = menuEl ? menuEl.getBoundingClientRect().width : 192;
                     const menuH = menuEl ? menuEl.getBoundingClientRect().height : 150;
 
-                    // افتراضي: تحت الزر ومحاذاة يمين
                     let top = r.bottom + this.gap;
                     let left = r.right - menuW;
 
-                    // اضبط اليسار ضمن الشاشة
                     left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
 
-                    // لو ما في مساحة تحت، اطلع فوق (قريب من الزر)
                     const spaceBelow = window.innerHeight - r.bottom;
                     const spaceAbove = r.top;
 
@@ -376,14 +368,12 @@
                         top = r.top - menuH - this.gap;
                     }
 
-                    // اضبط top ضمن الشاشة
                     top = Math.max(8, Math.min(top, window.innerHeight - menuH - 8));
 
                     this.style = `top:${top}px; left:${left}px;`;
                 },
 
                 init() {
-                    // إعادة تموضع أثناء السكرول/الريسايز
                     window.addEventListener('scroll', () => { if (this.open) this.reposition(); }, true);
                     window.addEventListener('resize', () => { if (this.open) this.reposition(); });
                 }

@@ -12,23 +12,18 @@ use App\Models\Conversation;
 
 class GlassesController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-
 
 public function index(Request $request)
 {
     $userId = auth()->id();
 
-    // ✅ تحديث تلقائي للحالة قبل عرض القائمة
     DB::transaction(function () use ($userId) {
 
         $glassesIds = Conversation::query()
             ->where('donor_id', $userId)
             ->where('status', 'open')
             ->whereNotNull('glasses_id')
-            ->whereHas('messages') // ✅ رسالة واحدة أو أكثر
+            ->whereHas('messages') 
             ->pluck('glasses_id')
             ->unique()
             ->values();
@@ -37,12 +32,11 @@ public function index(Request $request)
             Glasses::query()
                 ->where('user_id', $userId)
                 ->whereIn('id', $glassesIds)
-                ->whereIn('status', ['available', 'reserved']) // ✅ فقط هذه تتغير
+                ->whereIn('status', ['available', 'reserved']) 
                 ->update(['status' => 'in_contact']);
         }
     });
 
-    // --------- كودك كما هو (فلترة + ترتيب) ----------
     $q = trim((string) $request->query('q', ''));
     $status = (string) $request->query('status', '');
 
@@ -62,9 +56,6 @@ public function index(Request $request)
         $query->where('status', $status);
     }
 
-    // ترتيب الحالات (خلّيت reserved قبل available لأنه منطقي)
-    // ملاحظة: استخدمنا CASE WHEN بدل FIELD() لأن FIELD() خاصة بـ MySQL فقط
-    // ولا تعمل على SQLite (المستخدمة في بيئة الاختبارات)
     $query->orderByRaw("
         CASE status
             WHEN 'pending_donation' THEN 1
@@ -76,30 +67,24 @@ public function index(Request $request)
         END
     ");
 
-    // ترتيب داخل الحالة
     $query->orderByDesc('created_at');
 
     $glasses = $query->paginate(10)->withQueryString();
 
     return view('donor.index_glasses', compact('glasses'));
 }
-    /**
-     * Show the form for creating a new resource.
-     */
+
     public function create()
     {
         return view('donor.add_glass');
 
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         // 1) Validation
         $data = $request->validate([
-    // الصورة الرئيسية اختيارية: ممكن يضاف لاحقاً من صفحة التعديل
+
     'main_image' => ['nullable','image','max:4096'],
     'images.*'   => ['nullable','image','max:4096'],
     'images'     => ['nullable','array','max:3'],
@@ -128,11 +113,9 @@ public function index(Request $request)
     'contact_method' => ['nullable','in:chat_only,phone,both'],
 ]);
 
-        // 2) إضافة بيانات النظام (لا تجعلها تأتي من الفورم)
         $data['user_id'] = auth()->id();
         $data['status'] = 'available';
 
-        // 3) Create
         $glasses = Glasses::create([
     'user_id' => auth()->id(),
     'title' => $data['title'],
@@ -189,7 +172,7 @@ $glasses->save();
             }
         }
 
-        // حفظ الصور الإضافية (حد أقصى 3)
+
         if ($request->hasFile('images')) {
             $images = $request->file('images');
 
@@ -204,15 +187,13 @@ $glasses->save();
             }
         }
 
-        // 4) Redirect + flash message
+
         return redirect()
             ->route('donor.glasses.index')
             ->with('success', 'Glasses added successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
+
     public function show(Glasses $glasses)
 {
     $this->authorize('view', $glasses);
@@ -223,9 +204,6 @@ $glasses->save();
 }
 
 
-    /**
-     * Show the form for editing the specified resource.
-     */
    public function edit(Glasses $glasses)
 {
     $this->authorize('update', $glasses);
@@ -235,18 +213,12 @@ $glasses->save();
     return view('donor.edit_glass', compact('glasses'));
 }
 
-    /**
-     * Update the specified resource in storage.
-     */
 
 
 public function update(Request $request, Glasses $glasses)
 {
     $this->authorize('update', $glasses);
 
-    // ملاحظة: title/condition/lens_type بتستخدم "sometimes" عشان تحديث جزئي
-    // (partial update) من صفحة التعديل ما يفشلش لو الحقل ما اتبعتش أصلاً؛
-    // ولو اتبعت فعلاً لازم يكون صحيح ("required" لسه سارية وقتها).
     $data = $request->validate([
         'title'       => ['sometimes','required','string','max:150'],
         'description' => ['nullable','string','max:2000'],
@@ -279,8 +251,6 @@ public function update(Request $request, Glasses $glasses)
     try {
         DB::transaction(function () use ($request, $glasses, $data) {
 
-            // 1) تحديث الحقول الأساسية
-            // (?? $glasses->xxx بدل ما نطلب الحقل إجباري كل مرة في تحديث جزئي)
             $glasses->update([
 
                 'title' => $data['title'] ?? $glasses->title,
@@ -306,10 +276,10 @@ public function update(Request $request, Glasses $glasses)
                 'contact_method' => array_key_exists('contact_method', $data) ? $data['contact_method'] : $glasses->contact_method,
             ]);
 
-            // 2) استبدال الصورة الرئيسية
+
             if ($request->hasFile('main_image')) {
 
-                // اجلب القديمة من DB (لا تعتمد على علاقة محمّلة سابقاً)
+
                 $oldPrimary = $glasses->images()->where('is_primary', true)->first();
 
                 if ($oldPrimary) {
@@ -317,7 +287,6 @@ public function update(Request $request, Glasses $glasses)
                     $oldPrimary->delete();
                 }
 
-                // ضمان ما في أي صورة ثانية is_primary = 1
                 $glasses->images()->update(['is_primary' => false]);
 
                 $path = $request->file('main_image')->store('glasses', 'public');
@@ -332,10 +301,8 @@ public function update(Request $request, Glasses $glasses)
                 ]);
             }
 
-            // 3) استبدال الصور الإضافية بالكامل (أفضل UX في التعديل)
             if ($request->hasFile('images')) {
 
-                // احذف كل الصور غير الرئيسية القديمة
                 $oldAdditional = $glasses->images()->where('is_primary', false)->get();
 
                 foreach ($oldAdditional as $img) {
@@ -343,7 +310,6 @@ public function update(Request $request, Glasses $glasses)
                     $img->delete();
                 }
 
-                // خزّن الجديدة (حد أقصى 3)
                 $uploads = array_slice($request->file('images'), 0, 3);
 
                 foreach ($uploads as $image) {
@@ -369,7 +335,6 @@ public function update(Request $request, Glasses $glasses)
         return back()->withInput()->with('error', 'Image upload failed. Please try again.');
     }
 
-    // مهم: اعمل refresh عشان تشوف الصور الجديدة مباشرة
     $glasses->refresh()->load(['images', 'primaryImage']);
 
     return redirect()
@@ -377,9 +342,6 @@ public function update(Request $request, Glasses $glasses)
         ->with('success', 'Glasses updated successfully.');
 }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Glasses $glasses)
 {
     abort_unless($glasses->user_id === auth()->id(), 404);
@@ -403,18 +365,14 @@ public function update(Request $request, Glasses $glasses)
 
 public function destroyImage(Glasses $glasses, GlassesImage $image)
 {
-    // 1️⃣ تأكد أن النظارة تخص المستخدم الحالي
     abort_unless($glasses->user_id === auth()->id(), 404);
 
-    // 2️⃣ تأكد أن الصورة تابعة لهذه النظارة وليست الصورة الرئيسية
     abort_if($image->glasses_id !== $glasses->id || $image->is_primary, 404);
 
-    // 3️⃣ حذف الصورة من التخزين
     if (Storage::disk('public')->exists($image->path)) {
         Storage::disk('public')->delete($image->path);
     }
 
-    // 4️⃣ حذف السجل من قاعدة البيانات
     $image->delete();
 
     return back()->with('success', 'Image deleted successfully.');

@@ -24,7 +24,6 @@ class ComplaintClosedNotification extends Notification
             'complaint_id' => $this->complaint->id,
             'title'        => 'Complaint closed',
             'body'         => 'Your complaint has been closed by the admin.',
-            // غيّر اسم الراوت حسب مشروعك
             'url'          => route('complaints.show', $this->complaint->id),
         ];
     }

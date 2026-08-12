@@ -55,12 +55,10 @@ public function accept(ContactRequest $request)
             ->lockForUpdate()
             ->firstOrFail();
 
-        // لازم تكون متاحة
         if ($glasses->status !== 'available') {
             abort(409, 'Glasses is not available.');
         }
 
-        // إذا في طلب نشط بالفعل -> ممنوع
         if ($glasses->active_contact_request_id) {
             abort(409, 'Glasses already has an active contact request.');
         }
@@ -103,7 +101,6 @@ public function disconnect(Conversation $conversation)
 {
     abort_if($conversation->donor_id !== auth()->id(), 403);
 
-    // ✅ فحص أولي سريع (تجربة مستخدم أفضل، بدون الاعتماد عليه للحماية الفعلية)
     if ($conversation->status !== 'open') {
         return redirect()
             ->route('donor.chats.index', ['conversation' => $conversation->id])
@@ -113,9 +110,6 @@ public function disconnect(Conversation $conversation)
     try {
         DB::transaction(function () use ($conversation) {
 
-            // ✅ الحماية الفعلية: قفل صف الـ conversation وإعادة التحقق من حالتها
-            // داخل نفس الـ transaction، لمنع تنفيذ disconnect() مرتين بالتوازي
-            // (أو بالتوازي مع markDonated() على نفس المحادثة).
             $lockedConversation = Conversation::whereKey($conversation->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -173,7 +167,6 @@ public function reject(ContactRequest $request)
 {
     abort_if($request->donor_id !== auth()->id(), 403);
 
-    // ✅ منع رفض طلب مش pending (مقبول/مرفوض/مغلق أصلاً)
     if ($request->status !== 'pending') {
         return back()->with('error', 'This request is not pending.');
     }
@@ -198,7 +191,6 @@ public function markDonated(Request $request, Glasses $glasses)
         'donor_note'      => ['nullable', 'string', 'max:2000'],
     ]);
 
-    // ✅ فحص أولي سريع (تجربة مستخدم أفضل، بدون الاعتماد عليه للحماية الفعلية)
     $conversationExists = Conversation::where('id', $data['conversation_id'])
         ->where('glasses_id', $glasses->id)
         ->where('donor_id', auth()->id())
@@ -217,9 +209,6 @@ public function markDonated(Request $request, Glasses $glasses)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            // ✅ الحماية الفعلية: قفل صف الـ conversation والتحقق من حالتها
-            // داخل نفس الـ transaction، بعد ما صار عندنا lock على Glasses.
-            // هيك ما ينفذ طلبين "markDonated" لنفس المحادثة بنفس اللحظة.
             $conversation = Conversation::where('id', $data['conversation_id'])
                 ->where('glasses_id', $lockedGlasses->id)
                 ->where('donor_id', auth()->id())
@@ -289,8 +278,6 @@ public function markDonated(Request $request, Glasses $glasses)
 
    $confirmation->recipient?->notify(new RecipientMustConfirmDeliveryNotification($confirmation));
 
-    // الأدمن لازم يتنبّه بس لو الطلب فعليًا بحاجة مراجعته (pending)،
-    // مش لو انعمد تلقائيًا (approved) بدون تدخّله أصلًا
     if ($requireAdminApproval) {
         $admins = \App\Models\User::whereIn('role', ['admin', 'super_admin'])->get();
         \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\AdminNewDonationRequestNotification($donationRequest));

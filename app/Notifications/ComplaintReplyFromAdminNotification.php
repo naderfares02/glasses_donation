@@ -18,7 +18,7 @@ class ComplaintReplyFromAdminNotification extends Notification
 
     public function via($notifiable): array
     {
-        return ['database']; // حالياً
+        return ['database']; 
     }
 
     public function toDatabase($notifiable): array

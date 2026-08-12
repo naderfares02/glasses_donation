@@ -17,7 +17,7 @@ return new class extends Migration {
 
             $table->text('body');
 
-            $table->timestamp('read_at')->nullable(); // اختياري لو بدك لاحقًا
+            $table->timestamp('read_at')->nullable(); 
 
             $table->timestamps();
 

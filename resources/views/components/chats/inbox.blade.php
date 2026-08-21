@@ -26,7 +26,7 @@
 
                     <button wire:click="setActive({{ $c->id }})" wire:key="conversation-{{ $c->id }}"
                         class="w-full text-left p-4 border-b hover:bg-gray-50 transition
-                                                                                                                                                                                               {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
+                                                                                                                                                                                                   {{ $activeConversationId === $c->id ? 'bg-blue-50' : '' }}">
                         <div class="flex gap-3">
                             {{-- Avatar --}}
                             <div
@@ -102,7 +102,7 @@
 
                             {{-- Status badge --}}
                             <span class="text-xs font-semibold px-3 py-1 rounded-full border
-                                                                                                                                                                                                                                                                                                                                                                    {{ $active->status === 'open'
+                                                                                                                                                                                                                                                                                                                                                                            {{ $active->status === 'open'
                 ? 'bg-green-50 text-green-700 border-green-200'
                 : 'bg-gray-100 text-gray-700 border-gray-200' }}">
                                 {{ strtoupper($active->status) }}
@@ -205,7 +205,8 @@
                                                     <option value="inappropriate_behavior">Inappropriate behavior</option>
                                                     <option value="other">Other</option>
                                                 </select>
-                                                @error('reason') <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                                                @error('reason')
+                                                    <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
                                                 @enderror
                                             </div>
 
@@ -214,7 +215,8 @@
                                                 <textarea name="body" rows="5" required maxlength="3000"
                                                     class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-200"
                                                     placeholder="Write what happened..."></textarea>
-                                                @error('body') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
+                                                @error('body')
+                                                <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
                                             </div>
 
                                             <div>
@@ -223,7 +225,8 @@
                                                 <textarea name="description" rows="3" maxlength="2000"
                                                     class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-200"
                                                     placeholder="Any extra details for the admin..."></textarea>
-                                                @error('description') <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                                                @error('description')
+                                                    <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
                                                 @enderror
                                             </div>
                                         </div>
@@ -343,7 +346,7 @@
 
                                         <button type="submit"
                                             class="px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white">
-                                            Send to Admin
+                                            Send
                                         </button>
                                     </div>
                                 </form>

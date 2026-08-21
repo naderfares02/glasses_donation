@@ -20,7 +20,7 @@ class GlassesController extends Controller
 
         abort_if(!$isAvailable && !$isPartyToIt, 403);
 
-        $glasses->load(['primaryImage', 'images']);
+        $glasses->load(['primaryImage', 'images', 'receipt']);
 
         return view('recipient.glasses_show', compact('glasses'));
     }

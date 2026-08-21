@@ -135,7 +135,11 @@
                                     <p class="text-sm text-gray-600 mt-2">
                                         Donated by:
                                         <span class="font-semibold text-gray-800">
-                                            {{ $glasses->user->name }}
+                                            @auth
+                                                {{ $glasses->user->name }}
+                                            @else
+                                                A verified donor
+                                            @endauth
                                         </span>
                                     </p>
 
@@ -188,7 +192,7 @@
                                 </div>
                             </div>
 
-                            {{--  Show thumbnails only if exist --}}
+                            {{-- Show thumbnails only if exist --}}
                             @if($extras->count())
                                 <div class="grid grid-cols-4 sm:grid-cols-6 gap-3">
                                     @foreach($extras as $img)
@@ -203,7 +207,7 @@
                         </div>
                     </div>
 
-                    {{--  Facts (only if there are facts) --}}
+                    {{-- Facts (only if there are facts) --}}
                     @if($quickFacts->count())
                         <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                             <div class="p-5 border-b bg-gray-50">
@@ -226,7 +230,7 @@
                         </div>
                     @endif
 
-                    {{--  Description only if exists --}}
+                    {{-- Description only if exists --}}
                     @if($hasDescription)
                         <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                             <div class="p-5 border-b bg-gray-50">
@@ -241,7 +245,7 @@
                         </div>
                     @endif
 
-                    {{--  Prescription only if any field exists --}}
+                    {{-- Prescription only if any field exists --}}
                     @if($prescriptionFields->count())
                         <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                             <div class="p-5 border-b bg-gray-50">
@@ -269,7 +273,7 @@
                 {{-- Sidebar CTA --}}
                 <div class="lg:col-span-4 space-y-6">
 
-                    {{--  Contact / action card (never empty) --}}
+                    {{-- Contact / action card (never empty) --}}
                     <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                         <div class="p-5 border-b bg-gray-50">
                             <p class="text-sm font-semibold text-gray-800">Get this item</p>
@@ -280,13 +284,20 @@
 
                         <div class="p-6 space-y-4">
                             @if($status === 'available')
-                                <form method="POST" action="{{ route('recipient.contact-requests.store', $glasses->id) }}">
-                                    @csrf
-                                    <button type="submit"
-                                        class="w-full px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
-                                        Request Contact
-                                    </button>
-                                </form>
+                                @auth
+                                    <form method="POST" action="{{ route('recipient.contact-requests.store', $glasses->id) }}">
+                                        @csrf
+                                        <button type="submit"
+                                            class="w-full px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
+                                            Request Contact
+                                        </button>
+                                    </form>
+                                @else
+                                    <a href="{{ route('login') }}"
+                                        class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
+                                        Login to Request This Item
+                                    </a>
+                                @endauth
 
                                 <div class="rounded-2xl border bg-blue-50 border-blue-200 p-4">
                                     <p class="text-sm font-semibold text-blue-800">What happens next?</p>
@@ -310,7 +321,7 @@
                                     Browse other items
                                 </a>
 
-                            @elseif(in_array($status, ['in_contact', 'pending_donation', 'donated'], true))
+                            @elseif(in_array($status, ['in_contact', 'pending_donation'], true))
                                 <div class="rounded-2xl border bg-gray-50 p-4">
                                     <p class="text-sm font-semibold text-gray-800">Not available right now</p>
                                     <p class="text-xs text-gray-600 mt-1 leading-relaxed">
@@ -323,11 +334,30 @@
                                     class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold">
                                     View available glasses
                                 </a>
+                            @elseif($status === 'donated')
+                                <div class="rounded-2xl border bg-green-50 border-green-200 p-4">
+                                    <p class="text-sm font-semibold text-green-800">Donation Completed</p>
+                                    <p class="text-xs text-green-700 mt-1 leading-relaxed">
+                                        This item has been marked as donated.
+                                    </p>
+                                </div>
+
+                                @if($glasses->receipt)
+                                    <a href="{{ route('recipient.receipts.show', $glasses->receipt->id) }}"
+                                        class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
+                                        View Receipt
+                                    </a>
+                                @endif
+
+                                <a href="{{ route('recipient.main_page') }}"
+                                    class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl border bg-white hover:bg-gray-50 text-sm font-semibold text-gray-800">
+                                    View available glasses
+                                </a>
                             @endif
                         </div>
                     </div>
 
-                    {{--  Safety/Guidelines (never empty) --}}
+                    {{-- Safety/Guidelines (never empty) --}}
                     <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
                         <div class="p-5 border-b bg-gray-50">
                             <p class="text-sm font-semibold text-gray-800">Tips</p>

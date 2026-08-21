@@ -14,6 +14,8 @@ class DonationReceiptPolicy
 
         if ($user->role === 'donor' && $receipt->donor_id === $user->id) return true;
 
+        if ($user->role === 'recipient' && $receipt->recipient_id === $user->id) return true;
+
         return false;
     }
 

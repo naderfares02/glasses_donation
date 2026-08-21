@@ -14,6 +14,7 @@
 
     <!-- Cropper  -->
     <link rel="stylesheet" href="https://unpkg.com/cropperjs/dist/cropper.min.css">
+    <link rel="icon" type="image/png" href="{{ asset('logo-icon.png') }}">
     <script src="https://unpkg.com/cropperjs/dist/cropper.min.js" defer></script>
 
     <!-- Vite -->

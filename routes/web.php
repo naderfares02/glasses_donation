@@ -14,6 +14,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Recipient\DashboardController as RecipientDashboardController;
 use App\Http\Controllers\Recipient\DeliveryConfirmationController;
+use App\Http\Controllers\Recipient\DonationReceiptController as RecipientDonationReceiptController;
 use App\Http\Controllers\Donor\DonationReceiptController as DonorDonationReceiptController;
 use App\Http\Controllers\Recipient\GlassesController as RecipientGlassesController;
 use App\Http\Controllers\Recipient\RecipientContactRequestController;
@@ -114,17 +115,20 @@ Route::middleware(['auth', 'verified', 'role:donor', 'active', 'phone.verified']
 | Recipient Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'verified', 'role:recipient', 'active', 'phone.verified'])
-    ->prefix('recipient')
+Route::prefix('recipient')
     ->name('recipient.')
     ->group(function () {
-
-        // Recipient main page (available glasses grid)
         Route::get('/main-page', [RecipientDashboardController::class, 'index'])
             ->name('main_page');
 
         Route::get('/glasses/{glasses}', [RecipientGlassesController::class, 'show'])
             ->name('glasses.show');
+    });
+
+Route::middleware(['auth', 'verified', 'role:recipient', 'active', 'phone.verified'])
+    ->prefix('recipient')
+    ->name('recipient.')
+    ->group(function () {
 
         Route::post('/glasses/{glasses}/contact-request', [RecipientContactRequestController::class, 'store'])
             ->name('contact-requests.store');
@@ -164,6 +168,10 @@ Route::middleware(['auth', 'verified', 'role:recipient', 'active', 'phone.verifi
 
         Route::post('/delivery-confirmations/{confirmation}/not-received', [RecipientDonationsController::class, 'markNotReceived'])
             ->name('confirmations.not_received');
+
+        Route::get('/receipts', [RecipientDonationReceiptController::class, 'index'])->name('receipts.index');
+        Route::get('/receipts/{receipt}', [RecipientDonationReceiptController::class, 'show'])->name('receipts.show');
+        Route::get('/receipts/{receipt}/download', [RecipientDonationReceiptController::class, 'download'])->name('receipts.download');
 
         Route::patch(
         '/requests/{request}/withdraw',

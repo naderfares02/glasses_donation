@@ -198,7 +198,7 @@ $glasses->save();
 {
     $this->authorize('view', $glasses);
 
-    $glasses->load(['primaryImage', 'images']);
+    $glasses->load(['primaryImage', 'images', 'receipt']);
 
     return view('donor.glasses_show', compact('glasses'));
 }

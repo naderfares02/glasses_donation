@@ -3,14 +3,22 @@
 namespace App\Http\Controllers\Recipient;
 
 use App\Http\Controllers\Controller;
+use App\Models\ContactRequest;
 use App\Models\DeliveryConfirmation;
+use App\Models\DonationReceipt;
+use App\Models\DonationRequest;
 use Illuminate\Http\Request;
 use App\Models\Glasses;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Notifications\AdminRecipientConfirmedDeliveryNotification;
 use App\Notifications\AdminRecipientDeniedDeliveryNotification;
+use App\Notifications\DonorDonationApprovedNotification;
 use App\Notifications\DonorRecipientDeniedDeliveryNotification;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class RecipientDonationsController extends Controller
 {
@@ -52,6 +60,7 @@ public function show(DeliveryConfirmation $confirmation)
         'donationRequest.glasses.primaryImage',
         'donationRequest.donor:id,name,avatar',
     ]);
+
     return view('recipient.donations.show', compact('confirmation'));
 }
 
@@ -72,19 +81,84 @@ public function markReceived(Request $request, DeliveryConfirmation $confirmatio
         'recipient_note' => ['nullable', 'string', 'max:2000'],
     ]);
 
+    $donationRequest = $confirmation->donationRequest;
 
-    $confirmation->update([
-        'status' => 'received',
-        'recipient_note' => $data['recipient_note'] ?? null,
-        'recipient_responded_at' => now(),
-    ]);
+    $requireAdminApproval = (bool) setting('donations.require_admin_approval_for_donated', true);
 
-    $donationRequest = $confirmation->donationRequest; 
+    $receipt = null;
+
+    DB::transaction(function () use ($confirmation, $data, $donationRequest, $requireAdminApproval, &$receipt) {
+        $confirmation->update([
+            'status' => 'received',
+            'recipient_note' => $data['recipient_note'] ?? null,
+            'recipient_responded_at' => now(),
+        ]);
+
+        if ($donationRequest && ! $requireAdminApproval) {
+            $locked = DonationRequest::whereKey($donationRequest->id)
+                ->lockForUpdate()
+                ->first();
+
+            // Receipts are only auto-issued here when the admin approval
+            // workflow is disabled. When it's enabled, an admin still has
+            // to review and approve the request before a receipt exists.
+            if ($locked && $locked->status === 'approved' && ! $locked->receipt) {
+
+                if ($locked->glasses) {
+                    $locked->glasses->update(['status' => 'donated']);
+                }
+
+                ContactRequest::where('glasses_id', $locked->glasses_id)
+                    ->whereIn('status', ['pending', 'accepted', 'on_hold'])
+                    ->update(['status' => 'closed']);
+
+                $receipt = DonationReceipt::create([
+                    'donation_request_id' => $locked->id,
+                    'glasses_id' => $locked->glasses_id,
+                    'donor_id' => $locked->donor_id,
+                    'recipient_id' => $locked->recipient_id,
+                    'approved_by' => null,
+                    'delivered_date' => $locked->delivered_date,
+                    'admin_note' => null,
+                    'receipt_code' => 'RCPT-'.strtoupper(Str::random(10)),
+                    'issued_at' => now(),
+                ]);
+            }
+        }
+    });
+
+    if ($receipt) {
+        try {
+            $pdf = Pdf::loadView('receipts.pdf', [
+                'receipt' => $receipt->loadMissing(['donor', 'recipient', 'glasses', 'approver']),
+                'request' => $donationRequest,
+            ])->setPaper('a4');
+
+            $path = "receipts/{$receipt->receipt_code}.pdf";
+            Storage::disk('local')->put($path, $pdf->output());
+            $receipt->update(['pdf_path' => $path]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $donationRequest->loadMissing('donor');
+
+        try {
+            $donationRequest->donor?->notify(new DonorDonationApprovedNotification($donationRequest));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return redirect()
+            ->route('recipient.donations.index', ['tab' => 'received'])
+            ->with('success', 'Thanks! Your confirmation was recorded and a donation receipt has been issued.');
+    }
 
     if ($donationRequest) {
         $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
-        
-        Notification::send($admins, new AdminRecipientConfirmedDeliveryNotification($donationRequest));}
+
+        Notification::send($admins, new AdminRecipientConfirmedDeliveryNotification($donationRequest));
+    }
 
     return redirect()
         ->route('recipient.donations.index', ['tab' => 'received'])
